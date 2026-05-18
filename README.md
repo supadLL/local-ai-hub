@@ -208,36 +208,11 @@ Only four model rows are shown at once in the dropdown; scroll to see the rest. 
 
 When confirmed, the backend generates a `ccswitch://v1/import?...` URL and the browser hands it to the local protocol handler. CCSwitch must already be installed and registered on the machine.
 
-## API Surface
-
-Admin endpoints:
-
-- `GET /api/admin/state`
-- `POST /api/admin/upstreams`
-- `POST /api/admin/upstreams/import`
-- `POST /api/admin/upstreams/test`
-- `POST /api/admin/upstreams/:id/test`
-- `DELETE /api/admin/upstreams/:id`
-- `POST /api/admin/upstreams/health-check`
-- `POST /api/admin/upstreams/oauth/login-start`
-- `POST /api/admin/upstreams/oauth/code-relay`
-- `POST /api/admin/client-keys`
-- `PUT /api/admin/client-keys/:id`
-- `DELETE /api/admin/client-keys/:id`
-- `POST /api/admin/client-keys/:id/ccswitch/open`
-
-Proxy endpoints:
-
-- `GET /v1/models`
-- `POST /v1/chat/completions`
-- `POST /v1/responses`
-- `POST /v1/messages`
 
 ## Model Catalog Notes
 
 The built-in catalog is a convenience list for selection and wildcard expansion. Codex/OAuth accounts also refresh their visible model list from the Codex backend during health checks. Actual model availability still depends on your upstream account, provider, entitlement, and probe results.
 
-`gpt-5.5-pro` is intentionally not listed as a selectable model; legacy requests for that ID are normalized to `gpt-5.5`.
 
 ## Testing
 
