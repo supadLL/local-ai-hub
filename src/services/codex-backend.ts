@@ -1,4 +1,5 @@
 import crypto from "node:crypto";
+import WebSocket, { type RawData } from "ws";
 import { codexModelCatalog } from "../model-catalog.js";
 import type { UpstreamQuotaSnapshot, UpstreamAccount } from "../types.js";
 import type { ForwardOpenAIOptions, ForwardedStreamResult, UpstreamProbeResult } from "./openai-proxy.js";
@@ -9,6 +10,11 @@ const CODEX_PLATFORM = process.env.CODEX_PLATFORM || "darwin";
 const CODEX_ARCH = process.env.CODEX_ARCH || "arm64";
 const CODEX_CHROMIUM_VERSION = process.env.CODEX_CHROMIUM_VERSION || "146";
 const CODEX_INSTALLATION_ID = process.env.CODEX_INSTALLATION_ID || crypto.randomUUID();
+const CODEX_TRANSPORT = process.env.CODEX_TRANSPORT || "auto";
+
+export interface ForwardCodexOptions extends ForwardOpenAIOptions {
+  preferWebSocket?: boolean;
+}
 
 export interface CodexUsageInfo {
   input_tokens: number;
@@ -234,6 +240,32 @@ function withClientMetadata(requestBody: unknown): unknown {
   };
 }
 
+function stripLocalTransportFields(requestBody: unknown): unknown {
+  if (!isRecord(requestBody)) {
+    return requestBody;
+  }
+  const { useWebSocket: _useWebSocket, use_websocket: _useWebsocketSnake, ...rest } = requestBody;
+  return rest;
+}
+
+function shouldUseWebSocket(requestBody: unknown, options: ForwardCodexOptions): boolean {
+  if (options.preferWebSocket) {
+    return true;
+  }
+  if (CODEX_TRANSPORT === "websocket") {
+    return true;
+  }
+  if (CODEX_TRANSPORT === "http") {
+    return false;
+  }
+  return (
+    isRecord(requestBody) &&
+    (requestBody.useWebSocket === true ||
+      requestBody.use_websocket === true ||
+      typeof requestBody.previous_response_id === "string")
+  );
+}
+
 async function readResponseBody(response: Response): Promise<unknown> {
   const raw = await response.text();
   try {
@@ -264,8 +296,18 @@ export async function readStreamText(body: ReadableStream<Uint8Array> | null): P
 export async function forwardCodexResponse(
   upstream: UpstreamAccount,
   requestBody: unknown,
-  options: ForwardOpenAIOptions = {}
+  options: ForwardCodexOptions = {}
 ): Promise<ForwardedStreamResult> {
+  if (shouldUseWebSocket(requestBody, options)) {
+    try {
+      return await forwardCodexResponseViaWebSocket(upstream, requestBody, options);
+    } catch (error) {
+      if (isRecord(requestBody) && typeof requestBody.previous_response_id === "string") {
+        throw error;
+      }
+    }
+  }
+
   const url = `${normalizeBaseUrl(upstream.baseUrl)}/codex/responses`;
   const response = await fetch(url, {
     method: "POST",
@@ -274,7 +316,7 @@ export async function forwardCodexResponse(
       contentType: "application/json",
       requestId: options.requestId
     }),
-    body: JSON.stringify(withClientMetadata(requestBody)),
+    body: JSON.stringify(withClientMetadata(stripLocalTransportFields(requestBody))),
     signal: options.signal
   });
 
@@ -283,6 +325,142 @@ export async function forwardCodexResponse(
     responseHeaders: extractHeaderMap(response.headers),
     body: response.body
   };
+}
+
+function rawDataToString(data: RawData): string {
+  if (typeof data === "string") {
+    return data;
+  }
+  if (Buffer.isBuffer(data)) {
+    return data.toString("utf8");
+  }
+  if (Array.isArray(data)) {
+    return Buffer.concat(data).toString("utf8");
+  }
+  return Buffer.from(data).toString("utf8");
+}
+
+function wsMessageToSSE(data: RawData): string {
+  const raw = rawDataToString(data);
+  try {
+    const parsed = JSON.parse(raw) as unknown;
+    if (isRecord(parsed)) {
+      const type = typeof parsed.type === "string" ? parsed.type : typeof parsed.event === "string" ? parsed.event : "message";
+      return `event: ${type}\ndata: ${JSON.stringify(parsed)}\n\n`;
+    }
+  } catch {
+    // Fall back to an ordinary message event for non-JSON frames.
+  }
+  return `event: message\ndata: ${JSON.stringify({ message: raw })}\n\n`;
+}
+
+function wsCreateBody(requestBody: unknown): Record<string, unknown> {
+  const body = withClientMetadata(stripLocalTransportFields(requestBody));
+  if (!isRecord(body)) {
+    return {
+      type: "response.create",
+      input: "",
+      stream: true,
+      store: false
+    };
+  }
+  return {
+    type: "response.create",
+    ...body,
+    stream: true,
+    store: false
+  };
+}
+
+function readableFromText(text: string): ReadableStream<Uint8Array> {
+  return new ReadableStream<Uint8Array>({
+    start(controller) {
+      controller.enqueue(new TextEncoder().encode(text));
+      controller.close();
+    }
+  });
+}
+
+export async function forwardCodexResponseViaWebSocket(
+  upstream: UpstreamAccount,
+  requestBody: unknown,
+  options: ForwardCodexOptions = {}
+): Promise<ForwardedStreamResult> {
+  const wsUrl = `${normalizeBaseUrl(upstream.baseUrl).replace(/^http:/, "ws:").replace(/^https:/, "wss:")}/codex/responses`;
+  const headers = buildCodexHeaders(upstream, {
+    requestId: options.requestId
+  });
+
+  return new Promise<ForwardedStreamResult>((resolve, reject) => {
+    const encoder = new TextEncoder();
+    const stream = new TransformStream<Uint8Array, Uint8Array>();
+    const writer = stream.writable.getWriter();
+    const socket = new WebSocket(wsUrl, { headers });
+    let opened = false;
+    let settled = false;
+
+    const closeWriter = () => {
+      void writer.close().catch(() => undefined);
+    };
+    const writeFrame = (frame: string) => {
+      void writer.write(encoder.encode(frame)).catch(() => undefined);
+    };
+
+    const abort = () => {
+      if (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING) {
+        socket.close();
+      }
+    };
+    options.signal?.addEventListener("abort", abort, { once: true });
+
+    socket.on("open", () => {
+      opened = true;
+      settled = true;
+      socket.send(JSON.stringify(wsCreateBody(requestBody)));
+      resolve({
+        statusCode: 200,
+        responseHeaders: {
+          "content-type": "text/event-stream"
+        },
+        body: stream.readable
+      });
+    });
+    socket.on("message", (data) => {
+      writeFrame(wsMessageToSSE(data));
+    });
+    socket.on("error", (error) => {
+      const message = error instanceof Error ? error.message : "WebSocket upstream error.";
+      if (!settled) {
+        settled = true;
+        reject(new Error(message));
+        return;
+      }
+      writeFrame(`event: error\ndata: ${JSON.stringify({ error: { message } })}\n\n`);
+      closeWriter();
+    });
+    socket.on("close", () => {
+      options.signal?.removeEventListener("abort", abort);
+      if (opened) {
+        closeWriter();
+      }
+    });
+    socket.on("unexpected-response", (_request, response) => {
+      const chunks: Buffer[] = [];
+      response.on("data", (chunk: Buffer) => chunks.push(Buffer.from(chunk)));
+      response.on("end", () => {
+        if (settled) {
+          return;
+        }
+        settled = true;
+        options.signal?.removeEventListener("abort", abort);
+        resolve({
+          statusCode: response.statusCode ?? 502,
+          responseHeaders: response.headers as Record<string, string>,
+          body: readableFromText(Buffer.concat(chunks).toString("utf8"))
+        });
+      });
+    });
+  });
 }
 
 export async function fetchCodexModels(

@@ -39,6 +39,9 @@ export interface UpstreamAccount {
   usedQuota?: number;
   lastUsedAt?: string | null;
   quota?: UpstreamQuotaSnapshot;
+  consecutiveFailures?: number;
+  cooldownUntil?: string | null;
+  lastErrorCategory?: string | null;
 }
 
 export interface ClientKey {
@@ -96,4 +99,6 @@ export interface ForwardedResult {
   body: unknown;
   usageUnits: number;
   upstreamModel?: string;
+  errorCategory?: string;
+  retryable?: boolean;
 }

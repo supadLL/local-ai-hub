@@ -12,6 +12,8 @@ The project is intentionally small and self-contained: an Express/TypeScript bac
 - Issue local client keys with model allowlists, per-minute request limits, and quota caps.
 - Proxy OpenAI-compatible `POST /v1/chat/completions`, `POST /v1/responses`, and `GET /v1/models`.
 - Proxy OpenAI OAuth accounts through the ChatGPT Codex backend for Codex/Claude Code style local use, including `POST /v1/messages`.
+- Support HTTP SSE and WebSocket transport for Codex-shaped requests that need server-side continuation.
+- Rotate across healthy upstream accounts, skip limited or cooling-down accounts, and classify upstream failures for safer failover.
 - Support non-streaming requests and basic `stream: true` passthrough.
 - Track local request count, local usage units, probe status, and rate-limit signals inferred from upstream headers.
 - Show sanitized upstream account status without returning raw upstream secrets to the browser.
@@ -67,6 +69,7 @@ See [.env.example](./.env.example).
 - `OPENAI_OAUTH_AUTH_ENDPOINT`: authorization endpoint
 - `OPENAI_OAUTH_TOKEN_ENDPOINT`: token endpoint
 - `OPENAI_OAUTH_CALLBACK_PORT`: local callback listener port, default `1455`
+- `CODEX_TRANSPORT`: Codex transport mode, `auto` by default; accepts `auto`, `http`, or `websocket`
 
 ## Workflow
 
@@ -123,6 +126,10 @@ The login flow creates a local PKCE session, opens an OpenAI authorization URL, 
 The `1455` port is not arbitrary in practice: the public OpenAI client used by Codex-style login flows expects that callback URI. If your browser cannot reach the callback page, the UI also lets you paste the full callback URL manually.
 
 OAuth-imported accounts are saved in the local pool as `openai-oauth` accounts. They are not the same thing as a normal `api.openai.com/v1` API key: Local AI Hub translates local OpenAI/Anthropic-shaped requests to the ChatGPT Codex backend at `/backend-api/codex/responses`.
+
+When a request includes `previous_response_id`, the gateway uses WebSocket transport so server-side continuation can be preserved. Other Codex requests default to HTTP SSE unless `CODEX_TRANSPORT=websocket` is set.
+
+Upstream failures are classified into categories such as auth, quota, rate limit, validation, overloaded, network, and path availability. Retryable failures can move traffic to another eligible account and place the failing account into a short local cooldown.
 
 ## Local Client Keys
 

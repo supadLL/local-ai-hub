@@ -7,6 +7,12 @@ import {
   streamResultToResponse
 } from "../services/codex-backend.js";
 import {
+  classifyCodexError,
+  classifyNetworkError,
+  isClassifiedRetryable,
+  type ClassifiedCodexError
+} from "../services/codex-errors.js";
+import {
   anthropicToCodexRequest,
   chatCompletionToCodexRequest,
   codexToAnthropicBody,
@@ -54,6 +60,8 @@ interface ProxyAttemptSummary {
   ok: boolean;
   upstreamModel?: string;
   error?: string;
+  errorCategory?: string;
+  retryable?: boolean;
 }
 
 class HttpError extends Error {
@@ -158,6 +166,46 @@ function appendAttempts(metadata: ProxyAttemptSummary[]): Record<string, unknown
     attemptCount: metadata.length,
     failoverCount: Math.max(0, metadata.length - 1)
   };
+}
+
+async function recordFailedUpstream(
+  store: FileStore,
+  prep: ProxyPreparation,
+  error: ClassifiedCodexError
+): Promise<void> {
+  await store.mutate((state) => {
+    const upstream = state.upstreams.find((item) => item.id === prep.upstream.id);
+    if (!upstream) {
+      return;
+    }
+
+    const now = nowIso();
+    upstream.consecutiveFailures = (upstream.consecutiveFailures ?? 0) + 1;
+    upstream.lastErrorCategory = error.category;
+    upstream.lastProbeOk = false;
+    upstream.lastProbeStatusCode = error.statusCode || null;
+    upstream.lastProbeError = error.message;
+    upstream.updatedAt = now;
+
+    if (error.cooldownMs > 0) {
+      const scaledCooldown = error.cooldownMs * Math.max(1, Math.min(5, upstream.consecutiveFailures));
+      upstream.cooldownUntil = new Date(Date.now() + scaledCooldown).toISOString();
+    }
+
+    if (error.category === "quota" || error.category === "rate_limit") {
+      upstream.quota = {
+        supported: true,
+        status: "limited",
+        source: "provider-api",
+        message: error.message,
+        fetchedAt: now,
+        limitRequests: null,
+        remainingRequests: 0,
+        usedPercent: 100,
+        resetRequests: upstream.cooldownUntil ?? null
+      };
+    }
+  });
 }
 
 function applyPassthroughHeaders(
@@ -293,14 +341,18 @@ async function forwardProviderRequest(
   const codexRequest = codexRequestForOpenAIEndpoint(endpoint, body);
   const forwardedStream = await forwardCodexResponse(activePrep.upstream, codexRequest, { requestId });
   if (forwardedStream.statusCode >= 400) {
+    const errorBody = await readStreamBody(forwardedStream.body);
+    const classified = classifyCodexError(forwardedStream.statusCode, errorBody);
     return {
       prep: activePrep,
       forwarded: {
         statusCode: forwardedStream.statusCode,
         responseHeaders: forwardedStream.responseHeaders,
-        body: await readStreamBody(forwardedStream.body),
+        body: errorBody,
         usageUnits: 0,
-        upstreamModel: typeof codexRequest.model === "string" ? codexRequest.model : undefined
+        upstreamModel: typeof codexRequest.model === "string" ? codexRequest.model : undefined,
+        errorCategory: classified.category,
+        retryable: classified.retryable
       }
     };
   }
@@ -339,6 +391,11 @@ async function recordSuccessfulProxy(
       upstream.requestCount = (upstream.requestCount ?? 0) + 1;
       upstream.usedQuota = (upstream.usedQuota ?? 0) + forwarded.usageUnits;
       upstream.lastUsedAt = completedAt;
+      upstream.consecutiveFailures = 0;
+      upstream.cooldownUntil = null;
+      upstream.lastErrorCategory = null;
+      upstream.lastProbeOk = true;
+      upstream.lastProbeError = null;
       upstream.quota =
         quotaSnapshotFromHeaders(forwarded.responseHeaders, completedAt) ??
         upstream.quota ??
@@ -387,11 +444,14 @@ async function handleOpenAICompatibleStream(
         prep.upstream.provider === "openai-oauth"
           ? await forwardCodexResponse(prep.upstream, codexRequestForOpenAIEndpoint(endpoint, body), { requestId })
           : await forwardOpenAICompatibleStream(prep.upstream, endpoint, body, { requestId });
+      const classified = forwarded.statusCode >= 400 ? classifyCodexError(forwarded.statusCode, null) : null;
       attempts.push({
         upstreamId: prep.upstream.id,
         upstreamName: prep.upstream.name,
         statusCode: forwarded.statusCode,
-        ok: forwarded.statusCode < 400
+        ok: forwarded.statusCode < 400,
+        errorCategory: classified?.category,
+        retryable: classified?.retryable
       });
 
       if (forwarded.statusCode < 400) {
@@ -424,26 +484,34 @@ async function handleOpenAICompatibleStream(
       }
 
       const errorBody = await readStreamBody(forwarded.body);
+      const errorInfo = classifyCodexError(forwarded.statusCode, errorBody);
+      await recordFailedUpstream(store, prep, errorInfo);
       terminalResult = {
         prep,
         forwarded: {
           statusCode: forwarded.statusCode,
           responseHeaders: forwarded.responseHeaders,
           body: errorBody,
-          usageUnits: 0
+          usageUnits: 0,
+          errorCategory: errorInfo.category,
+          retryable: errorInfo.retryable
         }
       };
-      if (hasFallback && isRetryableUpstreamStatus(forwarded.statusCode)) {
+      if (hasFallback && (isClassifiedRetryable(errorInfo) || isRetryableUpstreamStatus(forwarded.statusCode))) {
         continue;
       }
       break;
     } catch (error) {
+      const errorInfo = classifyNetworkError(error);
+      await recordFailedUpstream(store, prep, errorInfo);
       attempts.push({
         upstreamId: prep.upstream.id,
         upstreamName: prep.upstream.name,
         statusCode: 502,
         ok: false,
-        error: error instanceof Error ? error.message : "Unknown upstream error"
+        error: errorInfo.message,
+        errorCategory: errorInfo.category,
+        retryable: errorInfo.retryable
       });
 
       if (!hasFallback) {
@@ -572,7 +640,9 @@ async function handleOpenAICompatiblePost(
           upstreamName: result.prep.upstream.name,
           statusCode: forwarded.statusCode,
           ok: forwarded.statusCode < 400,
-          upstreamModel: forwarded.upstreamModel
+          upstreamModel: forwarded.upstreamModel,
+          errorCategory: forwarded.errorCategory,
+          retryable: forwarded.retryable
         });
 
         if (forwarded.statusCode < 400) {
@@ -580,18 +650,24 @@ async function handleOpenAICompatiblePost(
           break;
         }
 
+        const errorInfo = classifyCodexError(forwarded.statusCode, forwarded.body);
+        await recordFailedUpstream(store, result.prep, errorInfo);
         terminalResult = result;
-        if (hasFallback && isRetryableUpstreamStatus(forwarded.statusCode)) {
+        if (hasFallback && (isClassifiedRetryable(errorInfo) || isRetryableUpstreamStatus(forwarded.statusCode))) {
           continue;
         }
         break;
       } catch (error) {
+        const errorInfo = classifyNetworkError(error);
+        await recordFailedUpstream(store, prep, errorInfo);
         attempts.push({
           upstreamId: prep.upstream.id,
           upstreamName: prep.upstream.name,
           statusCode: 502,
           ok: false,
-          error: error instanceof Error ? error.message : "Unknown upstream error"
+          error: errorInfo.message,
+          errorCategory: errorInfo.category,
+          retryable: errorInfo.retryable
         });
 
         if (!hasFallback) {
@@ -747,12 +823,15 @@ async function handleAnthropicMessagesPost(
         body as unknown as Parameters<typeof anthropicToCodexRequest>[0]
       );
       const forwarded = await forwardCodexResponse(prep.upstream, codexRequest, { requestId });
+      const classified = forwarded.statusCode >= 400 ? classifyCodexError(forwarded.statusCode, null) : null;
       attempts.push({
         upstreamId: prep.upstream.id,
         upstreamName: prep.upstream.name,
         statusCode: forwarded.statusCode,
         ok: forwarded.statusCode < 400,
-        upstreamModel: codexRequest.model
+        upstreamModel: codexRequest.model,
+        errorCategory: classified?.category,
+        retryable: classified?.retryable
       });
 
       if (forwarded.statusCode < 400) {
@@ -805,23 +884,29 @@ async function handleAnthropicMessagesPost(
       }
 
       const errorText = await readStreamText(forwarded.body);
+      const errorInfo = classifyCodexError(forwarded.statusCode, errorText);
+      await recordFailedUpstream(store, prep, errorInfo);
       terminalResult = {
         prep,
         statusCode: forwarded.statusCode,
         body: anthropicError("api_error", errorText || `Codex upstream returned HTTP ${forwarded.statusCode}.`),
         headers: forwarded.responseHeaders
       };
-      if (hasFallback && isRetryableUpstreamStatus(forwarded.statusCode)) {
+      if (hasFallback && (isClassifiedRetryable(errorInfo) || isRetryableUpstreamStatus(forwarded.statusCode))) {
         continue;
       }
       break;
     } catch (error) {
+      const errorInfo = classifyNetworkError(error);
+      await recordFailedUpstream(store, prep, errorInfo);
       attempts.push({
         upstreamId: prep.upstream.id,
         upstreamName: prep.upstream.name,
         statusCode: 502,
         ok: false,
-        error: error instanceof Error ? error.message : "Unknown upstream error"
+        error: errorInfo.message,
+        errorCategory: errorInfo.category,
+        retryable: errorInfo.retryable
       });
 
       if (!hasFallback) {

@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { WebSocketServer } from "ws";
 import { createTestHarness } from "./helpers.js";
 
 const cleanups: Array<() => Promise<void>> = [];
@@ -340,6 +341,106 @@ describe("proxy failover behavior", () => {
     expect(state.upstreams[0]?.requestCount).toBe(1);
   });
 
+  it("uses WebSocket transport for continued Codex response requests", async () => {
+    const wsServer = new WebSocketServer({ port: 0 });
+    cleanups.push(
+      () =>
+        new Promise<void>((resolve) => {
+          wsServer.close(() => resolve());
+        })
+    );
+    await new Promise<void>((resolve) => wsServer.once("listening", resolve));
+    const address = wsServer.address();
+    const port = typeof address === "object" && address ? address.port : 0;
+    let receivedBody: Record<string, unknown> | null = null;
+
+    wsServer.on("connection", (socket) => {
+      socket.on("message", (raw) => {
+        receivedBody = JSON.parse(String(raw)) as Record<string, unknown>;
+        socket.send(JSON.stringify({ type: "response.output_text.delta", delta: "continued" }));
+        socket.send(
+          JSON.stringify({
+            type: "response.completed",
+            response: {
+              id: "resp_ws",
+              usage: {
+                input_tokens: 4,
+                output_tokens: 3,
+                total_tokens: 7
+              }
+            }
+          })
+        );
+        socket.close();
+      });
+    });
+
+    const harness = await createTestHarness({
+      upstreams: [
+        {
+          id: "upstream_ws",
+          name: "OpenAI Login",
+          provider: "openai-oauth",
+          baseUrl: `http://127.0.0.1:${port}/backend-api`,
+          apiKey: "oauth-access-token",
+          refreshToken: null,
+          tokenExpiresAt: null,
+          accountEmail: "free@example.com",
+          accountSubject: "user_123",
+          models: ["gpt-5.5"],
+          enabled: true,
+          weight: 1,
+          headers: {},
+          note: "",
+          createdAt: "2026-05-18T00:00:00.000Z",
+          updatedAt: "2026-05-18T00:00:00.000Z",
+          discoveredModels: ["gpt-5.5"]
+        }
+      ],
+      clientKeys: [
+        {
+          id: "ck_ws",
+          name: "codex",
+          key: "lah_ws_key",
+          allowedModels: ["gpt-5*"],
+          enabled: true,
+          quotaLimit: 1000,
+          usedQuota: 0,
+          requestsPerMinute: 60,
+          currentWindowStart: 0,
+          currentWindowCount: 0,
+          note: "",
+          createdAt: "2026-05-18T00:00:00.000Z",
+          updatedAt: "2026-05-18T00:00:00.000Z"
+        }
+      ]
+    });
+    cleanups.push(harness.cleanup);
+
+    const response = await harness.request
+      .post("/v1/responses")
+      .set("authorization", "Bearer lah_ws_key")
+      .send({
+        model: "gpt-5.5",
+        input: "continue",
+        previous_response_id: "resp_previous"
+      });
+
+    expect(response.status).toBe(200);
+    expect(response.body.output_text).toBe("continued");
+    expect(receivedBody).toMatchObject({
+      type: "response.create",
+      model: "gpt-5.5",
+      previous_response_id: "resp_previous",
+      stream: true,
+      store: false
+    });
+
+    const state = await harness.store.readState();
+    expect(state.clientKeys[0]?.usedQuota).toBe(7);
+    expect(state.upstreams[0]?.requestCount).toBe(1);
+  });
+
   it("fails over to the next matching upstream on retryable upstream errors", async () => {
     const harness = await createTestHarness({
       upstreams: [
@@ -442,6 +543,9 @@ describe("proxy failover behavior", () => {
 
     const state = await harness.store.readState();
     expect(state.clientKeys[0]?.usedQuota).toBe(42);
+    expect(state.upstreams[0]?.lastErrorCategory).toBe("rate_limit");
+    expect(state.upstreams[0]?.cooldownUntil).toBeTruthy();
+    expect(state.upstreams[0]?.consecutiveFailures).toBe(1);
     expect(state.upstreams[1]?.requestCount).toBe(1);
     expect(state.upstreams[1]?.usedQuota).toBe(42);
     expect(state.upstreams[1]?.quota?.remainingRequests).toBe(58);

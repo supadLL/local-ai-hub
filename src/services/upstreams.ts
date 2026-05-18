@@ -46,6 +46,12 @@ function supportsModel(upstream: UpstreamAccount, model: string): boolean {
   if (!upstream.enabled) {
     return false;
   }
+  if (upstream.cooldownUntil && Date.parse(upstream.cooldownUntil) > Date.now()) {
+    return false;
+  }
+  if (upstream.quota?.status === "limited" || upstream.quota?.status === "unavailable") {
+    return false;
+  }
 
   const modelPatterns = upstream.discoveredModels?.length ? upstream.discoveredModels : upstream.models;
   if (anyPatternMatches(modelPatterns, model)) {

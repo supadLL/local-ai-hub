@@ -12,6 +12,8 @@ Local AI Hub 是一个本地优先、面向个人使用的 OpenAI-compatible 中
 - 签发本地客户端 Key，并配置模型允许范围、每分钟请求数和累计额度上限。
 - 转发 OpenAI-compatible 的 `POST /v1/chat/completions`、`POST /v1/responses` 和 `GET /v1/models`。
 - OAuth 导入的 OpenAI 账号会通过 ChatGPT Codex 后端转发，支持 Codex / Claude Code 本地使用方式，包括 `POST /v1/messages`。
+- Codex 形态请求支持 HTTP SSE 和 WebSocket 两种传输方式，便于处理需要服务端续接的会话。
+- 在健康账号之间轮换，跳过已限额或处于短暂冷却中的账号，并对上游失败做分类以便安全回退。
 - 支持非流式请求和基础 `stream: true` 流式透传。
 - 记录本地请求次数、用量单位、账号测活状态，以及从上游响应头推断到的限速窗口信号。
 - 前端只展示脱敏后的上游账号状态，不回传真实上游密钥。
@@ -67,6 +69,7 @@ npm start
 - `OPENAI_OAUTH_AUTH_ENDPOINT`：授权端点
 - `OPENAI_OAUTH_TOKEN_ENDPOINT`：换取 token 的端点
 - `OPENAI_OAUTH_CALLBACK_PORT`：本地回调监听端口，默认 `1455`
+- `CODEX_TRANSPORT`：Codex 传输模式，默认 `auto`，可选 `auto`、`http` 或 `websocket`
 
 ## 使用流程
 
@@ -123,6 +126,10 @@ npm start
 `1455` 不是随便选的端口：Codex 风格的公开 OpenAI client 通常要求这个 callback URI。如果浏览器无法打开回调页，页面也提供了手动粘贴完整 callback URL 的兜底方式。
 
 OAuth 导入的账号会以 `openai-oauth` 类型进入本地账号池。它不是普通的 `api.openai.com/v1` API Key：Local AI Hub 会把本地 OpenAI / Anthropic 形态的请求翻译到 ChatGPT Codex 后端 `/backend-api/codex/responses`。
+
+当请求包含 `previous_response_id` 时，网关会使用 WebSocket 传输以保留服务端续接能力。其他 Codex 请求默认使用 HTTP SSE，除非设置 `CODEX_TRANSPORT=websocket`。
+
+上游失败会被分类为鉴权、额度、限速、请求校验、服务繁忙、网络和路径可用性等类型。可重试失败会尝试切换到另一个符合条件的账号，并给失败账号设置一个短暂的本地冷却时间。
 
 ## 本地客户端 Key
 

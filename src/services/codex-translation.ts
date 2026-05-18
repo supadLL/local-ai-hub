@@ -34,6 +34,8 @@ export interface CodexRequestBody {
   include?: unknown[];
   service_tier?: string;
   prompt_cache_key?: string;
+  previous_response_id?: string;
+  useWebSocket?: boolean;
 }
 
 interface AnthropicRequest {
@@ -395,6 +397,10 @@ export function responsesToCodexRequest(body: Record<string, unknown>): CodexReq
   }
   if (typeof body.prompt_cache_key === "string") {
     request.prompt_cache_key = body.prompt_cache_key;
+  }
+  if (typeof body.previous_response_id === "string") {
+    request.previous_response_id = body.previous_response_id;
+    request.useWebSocket = true;
   }
   return request;
 }
