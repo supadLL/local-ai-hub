@@ -57,7 +57,6 @@ git push origin v26.1.1.1
 workflow 会把这些文件上传到 Release：
 
 - `LocalAIHub-v26.1.1.1-win-x64.exe`
-- `WINDOWS-ONE-CLICK.zh-CN.md`
 - `LocalAIHub-v26.1.1.1-linux-x86_64.AppImage`
 - `LocalAIHub-v26.1.1.1-linux-x64.tar.gz`
 - `LocalAIHub-v26.1.1.1-linux-arm64.tar.gz`
@@ -66,13 +65,8 @@ workflow 会把这些文件上传到 Release：
 - `LocalAIHub-v26.1.1.1-mac-arm64.dmg`
 - `LocalAIHub-v26.1.1.1-mac-arm64.zip`
 - `LocalAIHub-v26.1.1.1-docker-image.tar.gz`
-- `latest.yml`
-- `latest-linux.yml`
-- `latest-mac.yml`
-- `version.json`
-- `SHA256SUMS.txt`
-- `version-windows.json`
-- `version-docker.json`
+
+Release 附件只保留这些可下载运行的版本包，不再额外上传 `latest*.yml`、`version*.json`、`SHA256SUMS.txt` 或说明文档。
 
 ## 用户侧使用方式
 

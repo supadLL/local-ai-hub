@@ -106,18 +106,6 @@ jobs:
           $version = "${{ needs.version.outputs.release_version }}"
           New-Item -ItemType Directory -Force -Path release/windows | Out-Null
           Copy-Item -LiteralPath LocalAIHub.exe -Destination "release/windows/LocalAIHub-$version-win-x64.exe" -Force
-          Copy-Item -LiteralPath WINDOWS-ONE-CLICK.zh-CN.md -Destination release/windows/WINDOWS-ONE-CLICK.zh-CN.md -Force
-
-          [ordered]@{
-            name = "local-ai-hub"
-            platform = "windows"
-            arch = "x64"
-            version = $version
-            repository = "${{ github.repository }}"
-            commit = "${{ github.sha }}"
-            sourceArchiveUrl = "${{ needs.version.outputs.source_archive_url }}"
-            builtAt = (Get-Date).ToUniversalTime().ToString("o")
-          } | ConvertTo-Json | Set-Content -LiteralPath release/windows/version-windows.json -Encoding UTF8
 
       - name: Upload Windows artifact
         uses: actions/upload-artifact@v4
@@ -279,16 +267,6 @@ jobs:
           version="${{ needs.version.outputs.release_version }}"
           mkdir -p release/docker
           docker save "${image_name}:${version}" | gzip > "release/docker/LocalAIHub-${version}-docker-image.tar.gz"
-          cat > release/docker/version-docker.json <<EOF
-          {
-            "name": "local-ai-hub",
-            "platform": "docker",
-            "image": "${image_name}",
-            "version": "${version}",
-            "commit": "${GITHUB_SHA}",
-            "builtAt": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
-          }
-          EOF
 
       - name: Push Docker image to GHCR
         if: needs.version.outputs.should_release == 'true'
@@ -328,80 +306,21 @@ jobs:
         with:
           path: release-artifacts
 
-      - name: Prepare release metadata
+      - name: Collect release package assets
         shell: bash
         run: |
           set -euo pipefail
           version="${{ needs.version.outputs.release_version }}"
-          release_date="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
           mkdir -p dist-assets
-          find release-artifacts -type f -print0 | while IFS= read -r -d '' file; do
+
+          find release-artifacts -type f -name "LocalAIHub-${version}-*" -print0 | while IFS= read -r -d '' file; do
             cp "$file" "dist-assets/$(basename "$file")"
           done
 
-          file_size() {
-            wc -c < "$1" | tr -d ' '
-          }
-
-          sha512_value() {
-            sha512sum "$1" | awk '{print $1}'
-          }
-
-          write_latest() {
-            output="$1"
-            shift
-            {
-              echo "version: ${version}"
-              echo "releaseDate: ${release_date}"
-              echo "files:"
-              first_path=""
-              first_sha=""
-              for asset in "$@"; do
-                [ -f "dist-assets/$asset" ] || continue
-                sha="$(sha512_value "dist-assets/$asset")"
-                size="$(file_size "dist-assets/$asset")"
-                echo "  - url: ${asset}"
-                echo "    sha512: ${sha}"
-                echo "    size: ${size}"
-                if [ -z "$first_path" ]; then
-                  first_path="$asset"
-                  first_sha="$sha"
-                fi
-              done
-              if [ -n "$first_path" ]; then
-                echo "path: ${first_path}"
-                echo "sha512: ${first_sha}"
-              fi
-            } > "dist-assets/$output"
-          }
-
-          write_latest latest.yml \
-            "LocalAIHub-${version}-win-x64.exe"
-
-          write_latest latest-linux.yml \
-            "LocalAIHub-${version}-linux-x86_64.AppImage" \
-            "LocalAIHub-${version}-linux-x64.tar.gz" \
-            "LocalAIHub-${version}-linux-arm64.tar.gz"
-
-          write_latest latest-mac.yml \
-            "LocalAIHub-${version}-mac-x64.dmg" \
-            "LocalAIHub-${version}-mac-x64.zip" \
-            "LocalAIHub-${version}-mac-arm64.dmg" \
-            "LocalAIHub-${version}-mac-arm64.zip"
-
-          cat > dist-assets/version.json <<EOF
-          {
-            "name": "local-ai-hub",
-            "version": "${version}",
-            "repository": "${GITHUB_REPOSITORY}",
-            "commit": "${GITHUB_SHA}",
-            "sourceArchiveUrl": "${{ needs.version.outputs.source_archive_url }}",
-            "dockerImage": "${{ needs.version.outputs.image_name }}:${version}",
-            "releaseDate": "${release_date}"
-          }
-          EOF
-
-          (cd dist-assets && sha256sum * > SHA256SUMS.txt)
+          if ! find dist-assets -type f | grep -q .; then
+            echo "No release package assets were collected." >&2
+            exit 1
+          fi
 
       - name: Publish release
         shell: bash
@@ -426,6 +345,15 @@ jobs:
           mapfile -t files < <(find dist-assets -type f | sort)
 
           if gh release view "$version" --repo "${GITHUB_REPOSITORY}" >/dev/null 2>&1; then
+            mapfile -t old_assets < <(
+              gh release view "$version" --repo "${GITHUB_REPOSITORY}" --json assets \
+                --jq '.assets[].name'
+            )
+            for asset in "${old_assets[@]}"; do
+              if [[ ! "$asset" =~ ^LocalAIHub-${version}- ]]; then
+                gh release delete-asset "$version" "$asset" --repo "${GITHUB_REPOSITORY}" -y
+              fi
+            done
             gh release upload "$version" "${files[@]}" --repo "${GITHUB_REPOSITORY}" --clobber
           else
             gh release create "$version" "${files[@]}" \
