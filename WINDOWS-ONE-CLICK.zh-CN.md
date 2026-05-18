@@ -1,12 +1,12 @@
 # Windows 一键启动说明
 
-这个项目已经提供 Windows 启动器：`LocalAIHub.exe`。
+这个项目已经提供 Windows 启动器，例如：`LocalAIHub-v26.1.1.1-win-x64.exe`。
 
 ## 给普通用户
 
 1. 打开 GitHub Releases。
-2. 下载 `LocalAIHub.exe`。
-3. 双击 `LocalAIHub.exe`。
+2. 下载最新版本的 `LocalAIHub-v版本号-win-x64.exe`。
+3. 双击这个 `.exe` 文件。
 4. 第一次启动会自动准备环境，可能需要等待几分钟。
 5. 浏览器自动打开 `http://127.0.0.1:4100` 后即可使用。
 
@@ -48,4 +48,4 @@
 npm run build:launcher
 ```
 
-如果希望其他人不克隆项目也能使用，推送 `v*` tag 后到 GitHub Release 下载自动构建出的 `LocalAIHub.exe` 即可。
+如果希望其他人不克隆项目也能使用，推送到 `main` 后到 GitHub Release 下载自动构建出的 `LocalAIHub-v版本号-win-x64.exe` 即可。首次版本号从 `v26.1.1.1` 开始，后续自动递增。

@@ -2,8 +2,8 @@
 
 GitHub Release 会提供两个跨平台启动包：
 
-- Linux：`LocalAIHub-linux-universal.tar.gz`
-- macOS：`LocalAIHub-macos-universal.zip`
+- Linux：`LocalAIHub-v26.1.1.1-linux-x86_64.AppImage`、`LocalAIHub-v26.1.1.1-linux-x64.tar.gz`、`LocalAIHub-v26.1.1.1-linux-arm64.tar.gz`
+- macOS：`LocalAIHub-v26.1.1.1-mac-x64.dmg`、`LocalAIHub-v26.1.1.1-mac-arm64.dmg`，以及对应 `.zip`
 
 它们和 Windows 的 `LocalAIHub.exe` 一样，都会在首次运行时自动下载对应版本源码、准备 Node.js、安装依赖、构建项目，并启动本地 proxy。
 
@@ -12,12 +12,12 @@ GitHub Release 会提供两个跨平台启动包：
 解压后进入目录：
 
 ```bash
-tar -xzf LocalAIHub-linux-universal.tar.gz -C LocalAIHub-linux
+tar -xzf LocalAIHub-v26.1.1.1-linux-x64.tar.gz -C LocalAIHub-linux
 cd LocalAIHub-linux
 ./LocalAIHub.sh
 ```
 
-部分桌面环境可以双击 `LocalAIHub.sh` 运行。包内也提供 `LocalAIHub.desktop`，如果系统提示需要信任或允许执行，请按系统提示确认。
+也可以下载 `LocalAIHub-v26.1.1.1-linux-x86_64.AppImage` 后直接双击或终端运行。部分桌面环境可以双击 `LocalAIHub.sh` 运行。包内也提供 `LocalAIHub.desktop`，如果系统提示需要信任或允许执行，请按系统提示确认。
 
 ## macOS
 

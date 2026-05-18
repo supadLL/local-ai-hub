@@ -9,15 +9,31 @@
 1. 安装 npm 依赖。
 2. 运行测试。
 3. 构建前端和后端。
-4. 编译 Windows 小白版 `LocalAIHub.exe`。
-5. 生成 Linux 启动包 `LocalAIHub-linux-universal.tar.gz`。
-6. 生成 macOS 启动包 `LocalAIHub-macos-universal.zip`。
-7. 构建 Docker 镜像并导出 `local-ai-hub-docker-image.tar.gz`。
+4. 编译 Windows 小白版 `LocalAIHub-v版本号-win-x64.exe`。
+5. 生成 Linux `x64`、`arm64` 启动包和 `x86_64.AppImage`。
+6. 生成 macOS `x64`、`arm64` 的 `.dmg` 和 `.zip`。
+7. 构建 Docker 镜像并导出 `LocalAIHub-v26.1.1.1-docker-image.tar.gz`。
 8. 上传所有构建产物。
 
 构建出来的 Windows / Linux / macOS 启动器都会写入当前 commit 对应的源码压缩包地址。用户只下载对应平台产物，运行后它会自动下载这个版本的项目源码、安装依赖、构建并启动本地 proxy。
 
 本地生成的 `LocalAIHub.exe` 已被 Git 忽略；正式分发以 GitHub Actions/Release 产物为准，避免提交过期二进制文件。
+
+## 版本规则
+
+Release 版本号使用四段式，初始版本为：
+
+```text
+v26.1.1.1
+```
+
+每次推送到 `main` 分支时，workflow 会读取已有 Release，自动递增最后一段，例如：
+
+```text
+v26.1.1.1 -> v26.1.1.2 -> v26.1.1.3
+```
+
+也可以手动运行 workflow 并填写指定版本号。版本号必须符合 `v数字.数字.数字.数字` 的格式。
 
 ## 发布正式版本
 
@@ -28,23 +44,33 @@ git tag v0.1.0
 git push origin v0.1.0
 ```
 
-tag 名以 `v` 开头时，workflow 会把这些文件上传到 Release：
+workflow 会把这些文件上传到 Release：
 
-- `LocalAIHub.exe`
+- `LocalAIHub-v26.1.1.1-win-x64.exe`
 - `WINDOWS-ONE-CLICK.zh-CN.md`
-- `LocalAIHub-linux-universal.tar.gz`
-- `LocalAIHub-macos-universal.zip`
-- `local-ai-hub-docker-image.tar.gz`
+- `LocalAIHub-v26.1.1.1-linux-x86_64.AppImage`
+- `LocalAIHub-v26.1.1.1-linux-x64.tar.gz`
+- `LocalAIHub-v26.1.1.1-linux-arm64.tar.gz`
+- `LocalAIHub-v26.1.1.1-mac-x64.dmg`
+- `LocalAIHub-v26.1.1.1-mac-x64.zip`
+- `LocalAIHub-v26.1.1.1-mac-arm64.dmg`
+- `LocalAIHub-v26.1.1.1-mac-arm64.zip`
+- `LocalAIHub-v26.1.1.1-docker-image.tar.gz`
+- `latest.yml`
+- `latest-linux.yml`
+- `latest-mac.yml`
+- `version.json`
+- `SHA256SUMS.txt`
 - `version-windows.json`
 - `version-docker.json`
 
 ## 用户侧使用方式
 
 1. 打开 GitHub Releases。
-2. Windows 下载 `LocalAIHub.exe`，双击运行。
-3. Linux 下载 `LocalAIHub-linux-universal.tar.gz`，解压后运行 `./LocalAIHub.sh`。
-4. macOS 下载 `LocalAIHub-macos-universal.zip`，解压后双击 `LocalAIHub.command`。
-5. Docker 使用 GHCR 镜像，或下载 `local-ai-hub-docker-image.tar.gz` 后 `docker load`。
+2. Windows 下载 `LocalAIHub-v26.1.1.1-win-x64.exe`，双击运行。
+3. Linux 下载 `LocalAIHub-v26.1.1.1-linux-x86_64.AppImage` 直接运行，或下载对应架构 `.tar.gz` 后运行 `./LocalAIHub.sh`。
+4. macOS 下载对应架构 `.dmg` 或 `.zip`，解压后双击 `LocalAIHub.command`。
+5. Docker 使用 GHCR 镜像，或下载 `LocalAIHub-v26.1.1.1-docker-image.tar.gz` 后 `docker load`。
 6. 浏览器打开 `http://127.0.0.1:4100` 后开始使用。
 
 EXE 单独运行时默认把项目安装到：

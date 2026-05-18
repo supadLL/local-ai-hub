@@ -40,13 +40,13 @@ docker compose up --build
 GitHub Release 会附带：
 
 ```text
-local-ai-hub-docker-image.tar.gz
+LocalAIHub-v26.1.1.1-docker-image.tar.gz
 ```
 
 下载后导入：
 
 ```bash
-gzip -dc local-ai-hub-docker-image.tar.gz | docker load
+gzip -dc LocalAIHub-v26.1.1.1-docker-image.tar.gz | docker load
 ```
 
 然后按 `docker images` 中显示的镜像名运行。

@@ -2,6 +2,11 @@ name: Build Release Artifacts
 
 on:
   workflow_dispatch:
+    inputs:
+      release_version:
+        description: "Optional explicit release version, for example v26.1.1.1"
+        required: false
+        type: string
   push:
     branches:
       - "**"
@@ -13,13 +18,97 @@ permissions:
   contents: write
   packages: write
 
+concurrency:
+  group: release-artifacts-${{ github.ref }}
+  cancel-in-progress: false
+
 env:
   NODE_VERSION: 22
+  INITIAL_RELEASE_VERSION: v26.1.1.1
 
 jobs:
+  version:
+    name: Resolve version
+    runs-on: ubuntu-latest
+    outputs:
+      release_version: ${{ steps.version.outputs.release_version }}
+      source_archive_url: ${{ steps.version.outputs.source_archive_url }}
+      should_release: ${{ steps.version.outputs.should_release }}
+      image_name: ${{ steps.version.outputs.image_name }}
+
+    steps:
+      - name: Resolve release version
+        id: version
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          MANUAL_VERSION: ${{ github.event.inputs.release_version || '' }}
+        run: |
+          set -euo pipefail
+
+          image_name="ghcr.io/${GITHUB_REPOSITORY,,}"
+          source_archive_url="https://github.com/${GITHUB_REPOSITORY}/archive/${GITHUB_SHA}.zip"
+          should_release="false"
+
+          next_version() {
+            latest="$(
+              gh api "repos/${GITHUB_REPOSITORY}/releases" --paginate --jq '.[].tag_name' 2>/dev/null \
+                | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$' \
+                | sort -V \
+                | tail -n 1 || true
+            )"
+
+            if [ -z "$latest" ]; then
+              printf '%s\n' "${INITIAL_RELEASE_VERSION}"
+              return 0
+            fi
+
+            version_body="${latest#v}"
+            IFS='.' read -r major minor patch build <<< "$version_body"
+            build=$((build + 1))
+            printf 'v%s.%s.%s.%s\n' "$major" "$minor" "$patch" "$build"
+          }
+
+          if [ "${GITHUB_EVENT_NAME}" = "pull_request" ]; then
+            release_version="pr-${GITHUB_SHA:0:12}"
+          elif [ "${GITHUB_REF_TYPE}" = "tag" ]; then
+            release_version="${GITHUB_REF_NAME}"
+            should_release="true"
+          elif [ "${GITHUB_EVENT_NAME}" = "workflow_dispatch" ]; then
+            if [ -n "$MANUAL_VERSION" ]; then
+              release_version="$MANUAL_VERSION"
+            else
+              release_version="$(next_version)"
+            fi
+            should_release="true"
+          elif [ "${GITHUB_REF_NAME}" = "main" ]; then
+            release_version="$(next_version)"
+            should_release="true"
+          else
+            release_version="${GITHUB_SHA:0:12}"
+          fi
+
+          if [ "$should_release" = "true" ] && ! printf '%s\n' "$release_version" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "Release versions must look like v26.1.1.1; got: $release_version" >&2
+            exit 1
+          fi
+
+          {
+            echo "release_version=$release_version"
+            echo "source_archive_url=$source_archive_url"
+            echo "should_release=$should_release"
+            echo "image_name=$image_name"
+          } >> "$GITHUB_OUTPUT"
+
+          echo "Release version: $release_version"
+          echo "Should release: $should_release"
+          echo "Source archive: $source_archive_url"
+
   windows:
     name: Windows EXE
     runs-on: windows-latest
+    needs:
+      - version
 
     steps:
       - name: Check out repository
@@ -40,33 +129,30 @@ jobs:
       - name: Build app
         run: npm run build
 
-      - name: Compute launcher metadata
-        shell: pwsh
-        run: |
-          $version = if ("${{ github.ref_type }}" -eq "tag") { "${{ github.ref_name }}" } else { "${{ github.sha }}" }
-          $sourceArchiveUrl = "https://github.com/${{ github.repository }}/archive/${{ github.sha }}.zip"
-
-          "LAH_BUILD_VERSION=$version" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-          "LAH_REPO_SLUG=${{ github.repository }}" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-          "LAH_SOURCE_ARCHIVE_URL=$sourceArchiveUrl" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-
       - name: Build Windows launcher
+        shell: pwsh
+        env:
+          LAH_BUILD_VERSION: ${{ needs.version.outputs.release_version }}
+          LAH_REPO_SLUG: ${{ github.repository }}
+          LAH_SOURCE_ARCHIVE_URL: ${{ needs.version.outputs.source_archive_url }}
         run: npm run build:launcher
 
-      - name: Prepare Windows artifact
+      - name: Prepare Windows artifacts
         shell: pwsh
         run: |
+          $version = "${{ needs.version.outputs.release_version }}"
           New-Item -ItemType Directory -Force -Path release/windows | Out-Null
-          Copy-Item -LiteralPath LocalAIHub.exe -Destination release/windows/LocalAIHub.exe -Force
+          Copy-Item -LiteralPath LocalAIHub.exe -Destination "release/windows/LocalAIHub-$version-win-x64.exe" -Force
           Copy-Item -LiteralPath WINDOWS-ONE-CLICK.zh-CN.md -Destination release/windows/WINDOWS-ONE-CLICK.zh-CN.md -Force
 
           [ordered]@{
             name = "local-ai-hub"
             platform = "windows"
-            version = $env:LAH_BUILD_VERSION
+            arch = "x64"
+            version = $version
             repository = "${{ github.repository }}"
             commit = "${{ github.sha }}"
-            sourceArchiveUrl = $env:LAH_SOURCE_ARCHIVE_URL
+            sourceArchiveUrl = "${{ needs.version.outputs.source_archive_url }}"
             builtAt = (Get-Date).ToUniversalTime().ToString("o")
           } | ConvertTo-Json | Set-Content -LiteralPath release/windows/version-windows.json -Encoding UTF8
 
@@ -76,87 +162,148 @@ jobs:
           name: LocalAIHub-Windows
           path: release/windows/*
 
-  unix:
-    name: Linux and macOS launchers
+  linux:
+    name: Linux launchers
     runs-on: ubuntu-latest
+    needs:
+      - version
 
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
 
-      - name: Compute launcher metadata
-        shell: bash
-        run: |
-          if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
-            version="${GITHUB_REF_NAME}"
-          else
-            version="${GITHUB_SHA}"
-          fi
-
-          {
-            echo "LAH_BUILD_VERSION=${version}"
-            echo "LAH_REPO_SLUG=${GITHUB_REPOSITORY}"
-            echo "LAH_SOURCE_ARCHIVE_URL=https://github.com/${GITHUB_REPOSITORY}/archive/${GITHUB_SHA}.zip"
-          } >> "$GITHUB_ENV"
-
       - name: Build Unix launchers
         shell: pwsh
+        env:
+          LAH_BUILD_VERSION: ${{ needs.version.outputs.release_version }}
+          LAH_REPO_SLUG: ${{ github.repository }}
+          LAH_SOURCE_ARCHIVE_URL: ${{ needs.version.outputs.source_archive_url }}
         run: ./scripts/build-unix-launchers.ps1
 
-      - name: Package Linux and macOS artifacts
+      - name: Package Linux artifacts
         shell: bash
         run: |
           set -euo pipefail
+          version="${{ needs.version.outputs.release_version }}"
+
           chmod +x release/linux/LocalAIHub.sh
-          chmod +x release/macos/LocalAIHub.command
           chmod +x release/linux/LocalAIHub.desktop
 
-          tar -czf release/LocalAIHub-linux-universal.tar.gz -C release/linux .
-          (cd release/macos && zip -qr ../LocalAIHub-macos-universal.zip .)
+          for arch in x64 arm64; do
+            package_dir="release/linux-${arch}"
+            mkdir -p "$package_dir"
+            cp -R release/linux/. "$package_dir/"
+            tar -czf "release/LocalAIHub-${version}-linux-${arch}.tar.gz" -C "$package_dir" .
+          done
 
-      - name: Upload Linux and macOS artifacts
+          appdir="release/appimage/AppDir"
+          mkdir -p "$appdir/usr/bin"
+          cp release/linux/LocalAIHub.sh "$appdir/usr/bin/LocalAIHub"
+          cp web/src/assets/favicon.svg "$appdir/local-ai-hub.svg"
+          cp web/src/assets/favicon.svg "$appdir/.DirIcon"
+
+          cat > "$appdir/local-ai-hub.desktop" <<'EOF'
+          [Desktop Entry]
+          Type=Application
+          Name=Local AI Hub
+          Comment=Start Local AI Hub
+          Terminal=true
+          Exec=LocalAIHub
+          Icon=local-ai-hub
+          Categories=Development;
+          EOF
+
+          cat > "$appdir/AppRun" <<'EOF'
+          #!/usr/bin/env sh
+          here="$(dirname "$(readlink -f "$0")")"
+          exec "$here/usr/bin/LocalAIHub" "$@"
+          EOF
+          chmod +x "$appdir/AppRun" "$appdir/usr/bin/LocalAIHub"
+
+          curl -L --fail --retry 2 \
+            -o release/appimagetool-x86_64.AppImage \
+            https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage
+          chmod +x release/appimagetool-x86_64.AppImage
+          ARCH=x86_64 APPIMAGE_EXTRACT_AND_RUN=1 release/appimagetool-x86_64.AppImage \
+            "$appdir" "release/LocalAIHub-${version}-linux-x86_64.AppImage"
+
+      - name: Upload Linux artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: LocalAIHub-Unix
+          name: LocalAIHub-Linux
           path: |
-            release/LocalAIHub-linux-universal.tar.gz
-            release/LocalAIHub-macos-universal.zip
+            release/LocalAIHub-${{ needs.version.outputs.release_version }}-linux-x64.tar.gz
+            release/LocalAIHub-${{ needs.version.outputs.release_version }}-linux-arm64.tar.gz
+            release/LocalAIHub-${{ needs.version.outputs.release_version }}-linux-x86_64.AppImage
+
+  macos:
+    name: macOS launchers
+    runs-on: macos-latest
+    needs:
+      - version
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Build Unix launchers
+        shell: pwsh
+        env:
+          LAH_BUILD_VERSION: ${{ needs.version.outputs.release_version }}
+          LAH_REPO_SLUG: ${{ github.repository }}
+          LAH_SOURCE_ARCHIVE_URL: ${{ needs.version.outputs.source_archive_url }}
+        run: ./scripts/build-unix-launchers.ps1
+
+      - name: Package macOS artifacts
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="${{ needs.version.outputs.release_version }}"
+          chmod +x release/macos/LocalAIHub.command
+
+          for arch in x64 arm64; do
+            package_dir="release/macos-${arch}"
+            mkdir -p "$package_dir"
+            cp -R release/macos/. "$package_dir/"
+            (cd "$package_dir" && zip -qr "../LocalAIHub-${version}-mac-${arch}.zip" .)
+            hdiutil create \
+              -volname "Local AI Hub ${version}" \
+              -srcfolder "$package_dir" \
+              -ov \
+              -format UDZO \
+              "release/LocalAIHub-${version}-mac-${arch}.dmg"
+          done
+
+      - name: Upload macOS artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: LocalAIHub-macOS
+          path: |
+            release/LocalAIHub-${{ needs.version.outputs.release_version }}-mac-x64.zip
+            release/LocalAIHub-${{ needs.version.outputs.release_version }}-mac-x64.dmg
+            release/LocalAIHub-${{ needs.version.outputs.release_version }}-mac-arm64.zip
+            release/LocalAIHub-${{ needs.version.outputs.release_version }}-mac-arm64.dmg
 
   docker:
     name: Docker image
     runs-on: ubuntu-latest
+    needs:
+      - version
 
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
-
-      - name: Compute Docker metadata
-        shell: bash
-        run: |
-          image_name="ghcr.io/${GITHUB_REPOSITORY,,}"
-          if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
-            version="${GITHUB_REF_NAME}"
-          else
-            version="${GITHUB_SHA}"
-          fi
-
-          {
-            echo "IMAGE_NAME=${image_name}"
-            echo "IMAGE_VERSION=${version}"
-          } >> "$GITHUB_ENV"
 
       - name: Build Docker image
         shell: bash
         run: |
           set -euo pipefail
-          tags=(-t "${IMAGE_NAME}:${GITHUB_SHA}")
-
-          if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
-            tags+=(-t "${IMAGE_NAME}:${GITHUB_REF_NAME}")
-          fi
+          image_name="${{ needs.version.outputs.image_name }}"
+          version="${{ needs.version.outputs.release_version }}"
+          tags=(-t "${image_name}:${GITHUB_SHA}" -t "${image_name}:${version}")
 
           if [ "${GITHUB_REF_NAME}" = "main" ]; then
-            tags+=(-t "${IMAGE_NAME}:latest")
+            tags+=(-t "${image_name}:latest")
           fi
 
           docker build "${tags[@]}" .
@@ -165,33 +312,35 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          image_name="${{ needs.version.outputs.image_name }}"
+          version="${{ needs.version.outputs.release_version }}"
           mkdir -p release/docker
-          docker save "${IMAGE_NAME}:${GITHUB_SHA}" | gzip > release/docker/local-ai-hub-docker-image.tar.gz
+          docker save "${image_name}:${version}" | gzip > "release/docker/LocalAIHub-${version}-docker-image.tar.gz"
           cat > release/docker/version-docker.json <<EOF
           {
             "name": "local-ai-hub",
             "platform": "docker",
-            "image": "${IMAGE_NAME}",
-            "version": "${IMAGE_VERSION}",
+            "image": "${image_name}",
+            "version": "${version}",
             "commit": "${GITHUB_SHA}",
             "builtAt": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
           }
           EOF
 
       - name: Push Docker image to GHCR
-        if: github.event_name != 'pull_request'
+        if: needs.version.outputs.should_release == 'true'
         shell: bash
         run: |
           set -euo pipefail
-          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
-          docker push "${IMAGE_NAME}:${GITHUB_SHA}"
+          image_name="${{ needs.version.outputs.image_name }}"
+          version="${{ needs.version.outputs.release_version }}"
 
-          if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
-            docker push "${IMAGE_NAME}:${GITHUB_REF_NAME}"
-          fi
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+          docker push "${image_name}:${GITHUB_SHA}"
+          docker push "${image_name}:${version}"
 
           if [ "${GITHUB_REF_NAME}" = "main" ]; then
-            docker push "${IMAGE_NAME}:latest"
+            docker push "${image_name}:latest"
           fi
 
       - name: Upload Docker artifact
@@ -204,10 +353,12 @@ jobs:
     name: Publish GitHub Release
     runs-on: ubuntu-latest
     needs:
+      - version
       - windows
-      - unix
+      - linux
+      - macos
       - docker
-    if: startsWith(github.ref, 'refs/tags/')
+    if: needs.version.outputs.should_release == 'true'
 
     steps:
       - name: Download artifacts
@@ -215,31 +366,109 @@ jobs:
         with:
           path: release-artifacts
 
+      - name: Prepare release metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="${{ needs.version.outputs.release_version }}"
+          release_date="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+          mkdir -p dist-assets
+          find release-artifacts -type f -print0 | while IFS= read -r -d '' file; do
+            cp "$file" "dist-assets/$(basename "$file")"
+          done
+
+          file_size() {
+            wc -c < "$1" | tr -d ' '
+          }
+
+          sha512_value() {
+            sha512sum "$1" | awk '{print $1}'
+          }
+
+          write_latest() {
+            output="$1"
+            shift
+            {
+              echo "version: ${version}"
+              echo "releaseDate: ${release_date}"
+              echo "files:"
+              first_path=""
+              first_sha=""
+              for asset in "$@"; do
+                [ -f "dist-assets/$asset" ] || continue
+                sha="$(sha512_value "dist-assets/$asset")"
+                size="$(file_size "dist-assets/$asset")"
+                echo "  - url: ${asset}"
+                echo "    sha512: ${sha}"
+                echo "    size: ${size}"
+                if [ -z "$first_path" ]; then
+                  first_path="$asset"
+                  first_sha="$sha"
+                fi
+              done
+              if [ -n "$first_path" ]; then
+                echo "path: ${first_path}"
+                echo "sha512: ${first_sha}"
+              fi
+            } > "dist-assets/$output"
+          }
+
+          write_latest latest.yml \
+            "LocalAIHub-${version}-win-x64.exe"
+
+          write_latest latest-linux.yml \
+            "LocalAIHub-${version}-linux-x86_64.AppImage" \
+            "LocalAIHub-${version}-linux-x64.tar.gz" \
+            "LocalAIHub-${version}-linux-arm64.tar.gz"
+
+          write_latest latest-mac.yml \
+            "LocalAIHub-${version}-mac-x64.dmg" \
+            "LocalAIHub-${version}-mac-x64.zip" \
+            "LocalAIHub-${version}-mac-arm64.dmg" \
+            "LocalAIHub-${version}-mac-arm64.zip"
+
+          cat > dist-assets/version.json <<EOF
+          {
+            "name": "local-ai-hub",
+            "version": "${version}",
+            "repository": "${GITHUB_REPOSITORY}",
+            "commit": "${GITHUB_SHA}",
+            "sourceArchiveUrl": "${{ needs.version.outputs.source_archive_url }}",
+            "dockerImage": "${{ needs.version.outputs.image_name }}:${version}",
+            "releaseDate": "${release_date}"
+          }
+          EOF
+
+          (cd dist-assets && sha256sum * > SHA256SUMS.txt)
+
       - name: Publish release
         shell: bash
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
-          tag="${GITHUB_REF_NAME}"
-          cat > RELEASE_NOTES.md <<'EOF'
+          version="${{ needs.version.outputs.release_version }}"
+          cat > RELEASE_NOTES.md <<EOF
+          Local AI Hub ${version}
+
           Download the artifact for your platform and run it to start Local AI Hub.
 
-          - Windows: download LocalAIHub.exe and double-click it.
-          - Linux: download LocalAIHub-linux-universal.tar.gz, extract it, then run ./LocalAIHub.sh.
-          - macOS: download LocalAIHub-macos-universal.zip, extract it, then double-click LocalAIHub.command or run it in Terminal.
-          - Docker: use the GHCR image, or download local-ai-hub-docker-image.tar.gz and run docker load.
+          - Windows: LocalAIHub-${version}-win-x64.exe
+          - Linux: LocalAIHub-${version}-linux-x86_64.AppImage, or tar.gz packages for x64/arm64
+          - macOS: LocalAIHub-${version}-mac-x64.dmg / .zip, or LocalAIHub-${version}-mac-arm64.dmg / .zip
+          - Docker: ${{ needs.version.outputs.image_name }}:${version}, or LocalAIHub-${version}-docker-image.tar.gz
 
           Default local URL: http://127.0.0.1:4100
           EOF
 
-          mapfile -t files < <(find release-artifacts -type f | sort)
+          mapfile -t files < <(find dist-assets -type f | sort)
 
-          if gh release view "$tag" --repo "${GITHUB_REPOSITORY}" >/dev/null 2>&1; then
-            gh release upload "$tag" "${files[@]}" --repo "${GITHUB_REPOSITORY}" --clobber
+          if gh release view "$version" --repo "${GITHUB_REPOSITORY}" >/dev/null 2>&1; then
+            gh release upload "$version" "${files[@]}" --repo "${GITHUB_REPOSITORY}" --clobber
           else
-            gh release create "$tag" "${files[@]}" \
+            gh release create "$version" "${files[@]}" \
               --repo "${GITHUB_REPOSITORY}" \
-              --title "Local AI Hub $tag" \
+              --target "${GITHUB_SHA}" \
+              --title "Local AI Hub ${version}" \
               --notes-file RELEASE_NOTES.md
           fi

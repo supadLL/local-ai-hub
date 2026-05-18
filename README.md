@@ -41,12 +41,14 @@ The project is intentionally small and self-contained: an Express/TypeScript bac
 
 Download the matching artifact from GitHub Releases:
 
-- Windows: `LocalAIHub.exe`
-- Linux: `LocalAIHub-linux-universal.tar.gz`
-- macOS: `LocalAIHub-macos-universal.zip`
-- Docker: `local-ai-hub-docker-image.tar.gz` or `ghcr.io/supadll/local-ai-hub`
+- Windows: `LocalAIHub-v26.1.1.1-win-x64.exe`
+- Linux: `LocalAIHub-v26.1.1.1-linux-x86_64.AppImage`, `LocalAIHub-v26.1.1.1-linux-x64.tar.gz`, or `LocalAIHub-v26.1.1.1-linux-arm64.tar.gz`
+- macOS: `LocalAIHub-v26.1.1.1-mac-x64.dmg`, `LocalAIHub-v26.1.1.1-mac-arm64.dmg`, or the matching `.zip`
+- Docker: `LocalAIHub-v26.1.1.1-docker-image.tar.gz` or `ghcr.io/supadll/local-ai-hub:v26.1.1.1`
 
 Run it from any local folder, or run the same launcher from the project root during development. On the first run it will create `.env` from `.env.example`, use an existing Node.js 20+ installation or download a portable Node.js runtime, install npm dependencies, build the app, start the service, and open `http://127.0.0.1:4100`.
+
+Releases are versioned automatically from `v26.1.1.1`; each new `main` build increments the final number. Release assets also include `latest.yml`, `latest-linux.yml`, `latest-mac.yml`, `version.json`, and `SHA256SUMS.txt`.
 
 When the EXE is launched outside a source checkout, it downloads the matching source archive embedded at build time and installs the app under `%LOCALAPPDATA%\LocalAIHub\app`. Local runtime files stay in `.local-runtime`, while `.env` and `data` are preserved across app updates.
 
