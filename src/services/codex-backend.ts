@@ -1,7 +1,12 @@
 import crypto from "node:crypto";
 import WebSocket, { type RawData } from "ws";
 import { codexModelCatalog } from "../model-catalog.js";
-import type { UpstreamQuotaSnapshot, UpstreamAccount } from "../types.js";
+import type {
+  UpstreamQuotaLimitBucket,
+  UpstreamQuotaSnapshot,
+  UpstreamQuotaWindow,
+  UpstreamAccount
+} from "../types.js";
 import type { ForwardOpenAIOptions, ForwardedStreamResult, UpstreamProbeResult } from "./openai-proxy.js";
 
 const CODEX_CLIENT_VERSION = process.env.CODEX_CLIENT_VERSION || "26.506.31421";
@@ -110,6 +115,26 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function parseNumber(value: unknown): number | undefined {
   return typeof value === "number" && Number.isFinite(value) ? value : undefined;
+}
+
+function parseBoolean(value: unknown): boolean | undefined {
+  return typeof value === "boolean" ? value : undefined;
+}
+
+function normalizePercent(value: unknown): number | null {
+  const parsed = parseNumber(value);
+  if (parsed === undefined) {
+    return null;
+  }
+  return Math.min(100, Math.max(0, Math.round(parsed)));
+}
+
+function isoFromUnixSeconds(value: unknown): string | null {
+  const parsed = parseNumber(value);
+  if (parsed === undefined || parsed <= 0) {
+    return null;
+  }
+  return new Date(parsed * 1000).toISOString();
 }
 
 function parseUsage(value: unknown): CodexUsageInfo | undefined {
@@ -512,16 +537,99 @@ export async function fetchCodexModels(
   };
 }
 
+function quotaWindowFromRateLimit(rateLimit: unknown): UpstreamQuotaWindow | null {
+  if (!isRecord(rateLimit)) {
+    return null;
+  }
+
+  const primaryWindow = isRecord(rateLimit.primary_window) ? rateLimit.primary_window : null;
+  const usedPercent = normalizePercent(primaryWindow?.used_percent);
+  const limitReached = parseBoolean(rateLimit.limit_reached) ?? usedPercent === 100;
+
+  return {
+    allowed: parseBoolean(rateLimit.allowed) ?? null,
+    limitReached,
+    usedPercent,
+    resetAt: isoFromUnixSeconds(primaryWindow?.reset_at),
+    limitWindowSeconds: parseNumber(primaryWindow?.limit_window_seconds) ?? null
+  };
+}
+
+function secondaryQuotaWindowFromRateLimit(rateLimit: unknown): UpstreamQuotaWindow | null {
+  if (!isRecord(rateLimit) || !isRecord(rateLimit.secondary_window)) {
+    return null;
+  }
+
+  const secondaryWindow = rateLimit.secondary_window;
+  const usedPercent = normalizePercent(secondaryWindow.used_percent);
+
+  return {
+    limitReached: usedPercent === 100 || rateLimit.limit_reached === true,
+    usedPercent,
+    resetAt: isoFromUnixSeconds(secondaryWindow.reset_at),
+    limitWindowSeconds: parseNumber(secondaryWindow.limit_window_seconds) ?? null
+  };
+}
+
+function quotaLimitBucketFromAdditional(value: unknown): UpstreamQuotaLimitBucket | null {
+  if (!isRecord(value)) {
+    return null;
+  }
+
+  const id = typeof value.metered_feature === "string" ? value.metered_feature.trim() : "";
+  if (!id) {
+    return null;
+  }
+
+  const window = quotaWindowFromRateLimit(value.rate_limit);
+  if (!window) {
+    return null;
+  }
+
+  return {
+    id,
+    name: typeof value.limit_name === "string" && value.limit_name.trim() ? value.limit_name.trim() : null,
+    ...window,
+    secondaryRateLimit: secondaryQuotaWindowFromRateLimit(value.rate_limit)
+  };
+}
+
+function isCodeReviewLimit(value: string | null | undefined): boolean {
+  const normalized = (value ?? "").trim().toLowerCase().replace(/[-\s]+/g, "_");
+  return (
+    normalized === "review" ||
+    normalized === "code_review" ||
+    normalized === "codex_review" ||
+    normalized === "codex_code_review" ||
+    normalized.includes("code_review") ||
+    normalized.includes("codex_review")
+  );
+}
+
+function anyLimitReached(...windows: Array<UpstreamQuotaWindow | null | undefined>): boolean {
+  return windows.some((window) => window?.limitReached === true);
+}
+
 function quotaStatusFromUsage(body: unknown, fetchedAt: string): UpstreamQuotaSnapshot | null {
   if (!isRecord(body) || !isRecord(body.rate_limit)) {
     return null;
   }
 
-  const rateLimit = body.rate_limit;
-  const primaryWindow = isRecord(rateLimit.primary_window) ? rateLimit.primary_window : null;
-  const usedPercent = parseNumber(primaryWindow?.used_percent) ?? null;
-  const resetAt = parseNumber(primaryWindow?.reset_at);
-  const limitReached = rateLimit.limit_reached === true;
+  const rateLimit = quotaWindowFromRateLimit(body.rate_limit);
+  if (!rateLimit) {
+    return null;
+  }
+
+  const secondaryRateLimit = secondaryQuotaWindowFromRateLimit(body.rate_limit);
+  const rawAdditional = Array.isArray(body.additional_rate_limits) ? body.additional_rate_limits : [];
+  const additionalRateLimits = rawAdditional
+    .map((item) => quotaLimitBucketFromAdditional(item))
+    .filter((item): item is UpstreamQuotaLimitBucket => Boolean(item));
+  const additionalReview = additionalRateLimits.find((item) => isCodeReviewLimit(item.id) || isCodeReviewLimit(item.name));
+  const codeReviewRateLimit = quotaWindowFromRateLimit(body.code_review_rate_limit) ?? additionalReview ?? null;
+  const limitReached =
+    anyLimitReached(rateLimit, secondaryRateLimit, codeReviewRateLimit) ||
+    additionalRateLimits.some((item) => item.limitReached || item.secondaryRateLimit?.limitReached);
   const allowed = rateLimit.allowed !== false;
   const planType = typeof body.plan_type === "string" ? body.plan_type : "unknown plan";
 
@@ -531,10 +639,16 @@ function quotaStatusFromUsage(body: unknown, fetchedAt: string): UpstreamQuotaSn
     source: "provider-api",
     message: `Codex quota reported by ChatGPT backend (${planType}).`,
     fetchedAt,
+    planType,
+    limitReached,
     limitRequests: null,
     remainingRequests: null,
-    usedPercent,
-    resetRequests: resetAt ? new Date(resetAt * 1000).toISOString() : null
+    usedPercent: rateLimit.usedPercent ?? null,
+    resetRequests: rateLimit.resetAt ?? null,
+    rateLimit,
+    secondaryRateLimit,
+    codeReviewRateLimit,
+    additionalRateLimits
   };
 }
 

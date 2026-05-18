@@ -7,6 +7,7 @@ import type {
   OAuthLoginStartResponse,
   UpstreamHealthCheckResponse,
   UpstreamCreateInput,
+  UpstreamQuotaSnapshot,
   UpstreamProbeResult
 } from "./types";
 
@@ -63,6 +64,11 @@ export const api = {
     requestJson<UpstreamHealthCheckResponse>("/api/admin/upstreams/health-check", {
       method: "POST",
       body: JSON.stringify(ids?.length ? { ids } : {})
+    }),
+
+  refreshUpstreamQuota: (id: string) =>
+    requestJson<{ quota: UpstreamQuotaSnapshot }>(`/api/admin/upstreams/${id}/quota`, {
+      method: "POST"
     }),
 
   deleteUpstream: (id: string) =>

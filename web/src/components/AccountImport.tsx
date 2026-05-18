@@ -61,6 +61,7 @@ interface AccountImportProps {
   onTestSaved: (id: string) => Promise<UpstreamProbeResult>;
   onHealthCheck: (ids?: string[]) => Promise<UpstreamHealthCheckResponse>;
   onDeleteSaved: (id: string, name: string) => Promise<void>;
+  onRefreshQuota: (id: string) => Promise<void>;
   onRefreshState: () => Promise<void>;
   onOAuthLogin: () => Promise<void>;
   onOAuthRelay: (callbackUrl: string) => Promise<void>;
@@ -76,6 +77,7 @@ export function AccountImport({
   onTestSaved,
   onHealthCheck,
   onDeleteSaved,
+  onRefreshQuota,
   onRefreshState,
   onOAuthLogin,
   onOAuthRelay,
@@ -417,6 +419,7 @@ export function AccountImport({
           onHealthCheck={onHealthCheck}
           onTestSaved={onTestSaved}
           onDeleteSaved={onDeleteSaved}
+          onRefreshQuota={onRefreshQuota}
           onFeedback={onFeedback}
         />
 

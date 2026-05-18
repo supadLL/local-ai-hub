@@ -296,7 +296,16 @@ describe("proxy failover behavior", () => {
       new Response(streamBody, {
         status: 200,
         headers: {
-          "content-type": "text/event-stream"
+          "content-type": "text/event-stream",
+          "x-codex-primary-used-percent": "37.6",
+          "x-codex-primary-window-minutes": "180",
+          "x-codex-primary-reset-at": "1893456000",
+          "x-codex-secondary-used-percent": "12",
+          "x-codex-secondary-window-minutes": "10080",
+          "x-codex-secondary-reset-at": "1894060800",
+          "x-codex-code-review-primary-used-percent": "64",
+          "x-codex-code-review-primary-window-minutes": "60",
+          "x-codex-code-review-primary-reset-at": "1893459600"
         }
       })
     );
@@ -339,6 +348,23 @@ describe("proxy failover behavior", () => {
     const state = await harness.store.readState();
     expect(state.clientKeys[0]?.usedQuota).toBe(5);
     expect(state.upstreams[0]?.requestCount).toBe(1);
+    expect(state.upstreams[0]?.quota).toMatchObject({
+      source: "response-headers",
+      status: "available",
+      usedPercent: 38,
+      rateLimit: {
+        usedPercent: 38,
+        limitWindowSeconds: 10800
+      },
+      secondaryRateLimit: {
+        usedPercent: 12,
+        limitWindowSeconds: 604800
+      },
+      codeReviewRateLimit: {
+        usedPercent: 64,
+        limitWindowSeconds: 3600
+      }
+    });
   });
 
   it("uses WebSocket transport for continued Codex response requests", async () => {

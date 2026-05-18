@@ -1,15 +1,35 @@
 export type ProviderType = "openai-compatible" | "openai-oauth";
 
+export interface UpstreamQuotaWindow {
+  allowed?: boolean | null;
+  limitReached?: boolean;
+  usedPercent?: number | null;
+  resetAt?: string | null;
+  limitWindowSeconds?: number | null;
+}
+
+export interface UpstreamQuotaLimitBucket extends UpstreamQuotaWindow {
+  id: string;
+  name?: string | null;
+  secondaryRateLimit?: UpstreamQuotaWindow | null;
+}
+
 export interface UpstreamQuotaSnapshot {
   supported: boolean;
   status: "unknown" | "available" | "limited" | "unavailable";
   source: "response-headers" | "provider-api" | "local";
   message: string;
   fetchedAt?: string | null;
+  planType?: string | null;
+  limitReached?: boolean;
   limitRequests?: number | null;
   remainingRequests?: number | null;
   usedPercent?: number | null;
   resetRequests?: string | null;
+  rateLimit?: UpstreamQuotaWindow | null;
+  secondaryRateLimit?: UpstreamQuotaWindow | null;
+  codeReviewRateLimit?: UpstreamQuotaWindow | null;
+  additionalRateLimits?: UpstreamQuotaLimitBucket[];
 }
 
 export interface UpstreamAccount {

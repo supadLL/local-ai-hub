@@ -37,6 +37,49 @@ The project is intentionally small and self-contained: an Express/TypeScript bac
 
 ## Quick Start
 
+### Windows one-click launcher
+
+Download the matching artifact from GitHub Releases:
+
+- Windows: `LocalAIHub.exe`
+- Linux: `LocalAIHub-linux-universal.tar.gz`
+- macOS: `LocalAIHub-macos-universal.zip`
+- Docker: `local-ai-hub-docker-image.tar.gz` or `ghcr.io/supadll/local-ai-hub`
+
+Run it from any local folder, or run the same launcher from the project root during development. On the first run it will create `.env` from `.env.example`, use an existing Node.js 20+ installation or download a portable Node.js runtime, install npm dependencies, build the app, start the service, and open `http://127.0.0.1:4100`.
+
+When the EXE is launched outside a source checkout, it downloads the matching source archive embedded at build time and installs the app under `%LOCALAPPDATA%\LocalAIHub\app`. Local runtime files stay in `.local-runtime`, while `.env` and `data` are preserved across app updates.
+
+Keep the launcher window open while using Local AI Hub. Press `Ctrl+C` in that window to stop the service.
+
+Useful launcher flags:
+
+```powershell
+.\LocalAIHub.exe --prepare-only
+.\LocalAIHub.exe --reinstall
+.\LocalAIHub.exe --rebuild
+.\LocalAIHub.exe --no-open
+.\LocalAIHub.exe --update-app
+.\LocalAIHub.exe --launcher-info
+```
+
+To rebuild the launcher after changing `launcher/LocalAIHubLauncher.cs`:
+
+```powershell
+npm run build:launcher
+```
+
+The first run needs internet access if dependencies or the portable Node.js runtime are not already present.
+
+Chinese step-by-step guides:
+
+- [WINDOWS-ONE-CLICK.zh-CN.md](./WINDOWS-ONE-CLICK.zh-CN.md)
+- [UNIX-ONE-CLICK.zh-CN.md](./UNIX-ONE-CLICK.zh-CN.md)
+- [DOCKER.zh-CN.md](./DOCKER.zh-CN.md)
+- [RELEASE.zh-CN.md](./RELEASE.zh-CN.md)
+
+### Developer startup
+
 ```bash
 npm install
 copy .env.example .env

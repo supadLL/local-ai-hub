@@ -1,0 +1,619 @@
+#!/usr/bin/env sh
+set -eu
+
+APP_TITLE="Local AI Hub"
+REQUIRED_NODE_MAJOR=20
+DEFAULT_NODE_VERSION="${LOCAL_AI_HUB_NODE_VERSION:-v22.11.0}"
+BUILD_VERSION="__LAH_BUILD_VERSION__"
+REPO_SLUG="__LAH_REPO_SLUG__"
+SOURCE_ARCHIVE_URL="__LAH_SOURCE_ARCHIVE_URL__"
+
+FORCE_INSTALL=0
+FORCE_BUILD=0
+FORCE_APP_UPDATE=0
+NO_APP_UPDATE=0
+PREPARE_ONLY=0
+NO_OPEN=0
+NODE_EXE=""
+NPM_CMD=""
+SERVER_PID=""
+
+log() {
+  printf '%s\n' "$*"
+}
+
+fail() {
+  printf '\n[Local AI Hub] Startup failed.\n%s\n' "$*" >&2
+  exit 1
+}
+
+has_arg() {
+  needle="$1"
+  shift
+  for arg in "$@"; do
+    [ "$arg" = "$needle" ] && return 0
+  done
+  return 1
+}
+
+arg_value() {
+  needle="$1"
+  shift
+  while [ "$#" -gt 0 ]; do
+    case "$1" in
+      "$needle")
+        shift
+        [ "$#" -gt 0 ] && printf '%s\n' "$1"
+        return 0
+        ;;
+      "$needle="*)
+        printf '%s\n' "${1#"$needle="}"
+        return 0
+        ;;
+    esac
+    shift
+  done
+  return 1
+}
+
+header() {
+  log "========================================"
+  log "$1"
+  log "========================================"
+}
+
+launcher_version() {
+  if [ -n "${LOCAL_AI_HUB_BUILD_VERSION:-}" ]; then
+    printf '%s\n' "$LOCAL_AI_HUB_BUILD_VERSION"
+  else
+    printf '%s\n' "$BUILD_VERSION"
+  fi
+}
+
+source_archive_url() {
+  if [ -n "${LOCAL_AI_HUB_SOURCE_URL:-}" ]; then
+    printf '%s\n' "$LOCAL_AI_HUB_SOURCE_URL"
+  else
+    printf '%s\n' "$SOURCE_ARCHIVE_URL"
+  fi
+}
+
+repo_slug() {
+  if [ -n "${LOCAL_AI_HUB_REPO:-}" ]; then
+    printf '%s\n' "$LOCAL_AI_HUB_REPO"
+  else
+    printf '%s\n' "$REPO_SLUG"
+  fi
+}
+
+script_dir() {
+  dir=$(dirname "$0")
+  (CDPATH= cd -- "$dir" 2>/dev/null && pwd -P)
+}
+
+is_project_root_at() {
+  dir="$1"
+  [ -f "$dir/package.json" ] || return 1
+  grep -Eq '"name"[[:space:]]*:[[:space:]]*"local-ai-hub"' "$dir/package.json"
+}
+
+find_project_root_from() {
+  dir="$1"
+  dir=$(CDPATH= cd -- "$dir" 2>/dev/null && pwd -P) || return 1
+  while [ "$dir" != "/" ]; do
+    if is_project_root_at "$dir"; then
+      printf '%s\n' "$dir"
+      return 0
+    fi
+    dir=$(dirname "$dir")
+  done
+  return 1
+}
+
+find_project_root_inside() {
+  root="$1"
+  if is_project_root_at "$root"; then
+    printf '%s\n' "$root"
+    return 0
+  fi
+
+  find "$root" -type f -name package.json 2>/dev/null | while IFS= read -r package_file; do
+    candidate=$(dirname "$package_file")
+    if is_project_root_at "$candidate"; then
+      printf '%s\n' "$candidate"
+      exit 0
+    fi
+  done
+}
+
+resolve_app_root() {
+  if value=$(arg_value "--app-dir" "$@"); then
+    printf '%s\n' "$value"
+    return 0
+  fi
+
+  if [ -n "${LOCAL_AI_HUB_APP_DIR:-}" ]; then
+    printf '%s\n' "$LOCAL_AI_HUB_APP_DIR"
+    return 0
+  fi
+
+  case "$(uname -s)" in
+    Darwin)
+      printf '%s\n' "$HOME/Library/Application Support/LocalAIHub/app"
+      ;;
+    *)
+      data_home="${XDG_DATA_HOME:-$HOME/.local/share}"
+      printf '%s\n' "$data_home/LocalAIHub/app"
+      ;;
+  esac
+}
+
+safe_file_name() {
+  printf '%s\n' "$1" | sed 's/[^A-Za-z0-9._-]/-/g'
+}
+
+version_marker_path() {
+  printf '%s\n' "$1/.local-ai-hub-source-version"
+}
+
+standalone_needs_version_update() {
+  app_root="$1"
+  version=$(launcher_version)
+  [ "$version" = "dev" ] && return 1
+
+  marker=$(version_marker_path "$app_root")
+  [ -f "$marker" ] || return 0
+
+  existing=$(sed -n '1p' "$marker" 2>/dev/null || true)
+  [ -n "$existing" ] && [ "$existing" != "$version" ]
+}
+
+download_file() {
+  url="$1"
+  dest="$2"
+  if command -v curl >/dev/null 2>&1; then
+    curl -L --fail --retry 2 -o "$dest" "$url"
+  elif command -v wget >/dev/null 2>&1; then
+    wget -O "$dest" "$url"
+  else
+    fail "curl or wget is required to download $url"
+  fi
+}
+
+extract_zip() {
+  archive="$1"
+  dest="$2"
+  if command -v unzip >/dev/null 2>&1; then
+    unzip -q "$archive" -d "$dest"
+  elif command -v python3 >/dev/null 2>&1; then
+    python3 -m zipfile -e "$archive" "$dest"
+  else
+    fail "unzip or python3 is required to extract $archive"
+  fi
+}
+
+preserve_app_item() {
+  case "$1" in
+    .env|data|.local-runtime|node_modules) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+skip_source_item() {
+  case "$1" in
+    .git|.github|.local-runtime|.local-build|node_modules|dist|public|data|.env|release|LocalAIHub.exe) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+replace_project_files() {
+  source_root="$1"
+  app_root="$2"
+  mkdir -p "$app_root"
+
+  for item in "$app_root"/* "$app_root"/.[!.]* "$app_root"/..?*; do
+    [ -e "$item" ] || continue
+    name=$(basename "$item")
+    if preserve_app_item "$name"; then
+      continue
+    fi
+    rm -rf "$item"
+  done
+
+  for item in "$source_root"/* "$source_root"/.[!.]* "$source_root"/..?*; do
+    [ -e "$item" ] || continue
+    name=$(basename "$item")
+    if skip_source_item "$name"; then
+      continue
+    fi
+    cp -R "$item" "$app_root/"
+  done
+}
+
+install_project_snapshot() {
+  app_root="$1"
+  force_download="$2"
+  url=$(source_archive_url)
+  version=$(launcher_version)
+  runtime_root="$app_root/.local-runtime"
+  download_root="$runtime_root/downloads"
+  extract_root="$runtime_root/source-extract"
+  mkdir -p "$download_root"
+
+  zip_path="$download_root/local-ai-hub-source-$(safe_file_name "$version").zip"
+  if [ "$force_download" = "1" ] && [ -f "$zip_path" ]; then
+    rm -f "$zip_path"
+  fi
+
+  if [ ! -f "$zip_path" ]; then
+    log "Downloading Local AI Hub source..."
+    log "$url"
+    download_file "$url" "$zip_path"
+  fi
+
+  rm -rf "$extract_root"
+  mkdir -p "$extract_root"
+  log "Extracting Local AI Hub source..."
+  extract_zip "$zip_path" "$extract_root"
+
+  extracted_project=$(find_project_root_inside "$extract_root" | sed -n '1p')
+  [ -n "$extracted_project" ] || fail "Downloaded source archive does not contain the Local AI Hub project."
+
+  log "Installing Local AI Hub app files..."
+  replace_project_files "$extracted_project" "$app_root"
+  printf '%s\n%s\n' "$version" "$url" > "$(version_marker_path "$app_root")"
+}
+
+ensure_standalone_project() {
+  app_root=$(resolve_app_root "$@")
+  mkdir -p "$app_root"
+
+  if is_project_root_at "$app_root" && [ "$FORCE_APP_UPDATE" = "0" ]; then
+    if [ "$NO_APP_UPDATE" = "1" ] || ! standalone_needs_version_update "$app_root"; then
+      log "Using cached Local AI Hub app: $app_root"
+      printf '%s\n' "$app_root"
+      return 0
+    fi
+  fi
+
+  if install_project_snapshot "$app_root" "$FORCE_APP_UPDATE"; then
+    printf '%s\n' "$app_root"
+    return 0
+  fi
+
+  if is_project_root_at "$app_root"; then
+    log "Could not update the cached app. Using the existing local copy instead."
+    printf '%s\n' "$app_root"
+    return 0
+  fi
+
+  fail "Could not install Local AI Hub source."
+}
+
+ensure_env_file() {
+  root="$1"
+  if [ ! -f "$root/.env" ] && [ -f "$root/.env.example" ]; then
+    cp "$root/.env.example" "$root/.env"
+    log "Created .env from .env.example"
+  fi
+}
+
+read_port() {
+  root="$1"
+  if [ -n "${PORT:-}" ]; then
+    printf '%s\n' "$PORT"
+    return 0
+  fi
+
+  if [ -f "$root/.env" ]; then
+    value=$(sed -n 's/^PORT[[:space:]]*=[[:space:]]*//p' "$root/.env" | sed -n '1p' | tr -d '"')
+    if [ -n "$value" ]; then
+      printf '%s\n' "$value"
+      return 0
+    fi
+  fi
+
+  printf '%s\n' "4100"
+}
+
+node_major() {
+  "$1" --version 2>/dev/null | sed -n 's/^v\([0-9][0-9]*\).*/\1/p'
+}
+
+node_usable() {
+  major=$(node_major "$1" || true)
+  [ -n "$major" ] && [ "$major" -ge "$REQUIRED_NODE_MAJOR" ]
+}
+
+find_portable_node() {
+  root="$1"
+  for node_path in "$root/.local-runtime/node"/node-*/bin/node; do
+    [ -x "$node_path" ] || continue
+    npm_path=$(dirname "$node_path")/npm
+    [ -x "$npm_path" ] || continue
+    if node_usable "$node_path"; then
+      printf '%s|%s\n' "$node_path" "$npm_path"
+      return 0
+    fi
+  done
+  return 1
+}
+
+find_system_node() {
+  node_path=$(command -v node 2>/dev/null || true)
+  npm_path=$(command -v npm 2>/dev/null || true)
+  [ -n "$node_path" ] && [ -n "$npm_path" ] || return 1
+  if node_usable "$node_path"; then
+    printf '%s|%s\n' "$node_path" "$npm_path"
+    return 0
+  fi
+  return 1
+}
+
+detect_node_platform() {
+  os_name=$(uname -s)
+  arch_name=$(uname -m)
+
+  case "$os_name" in
+    Darwin) platform="darwin" ;;
+    Linux) platform="linux" ;;
+    *) fail "Unsupported OS: $os_name" ;;
+  esac
+
+  case "$arch_name" in
+    x86_64|amd64) arch="x64" ;;
+    arm64|aarch64) arch="arm64" ;;
+    *) fail "Unsupported CPU architecture: $arch_name" ;;
+  esac
+
+  printf '%s|%s\n' "$platform" "$arch"
+}
+
+download_portable_node() {
+  root="$1"
+  platform_arch=$(detect_node_platform)
+  platform=${platform_arch%|*}
+  arch=${platform_arch#*|}
+  runtime_root="$root/.local-runtime/node"
+  download_root="$root/.local-runtime/downloads"
+  mkdir -p "$runtime_root" "$download_root"
+
+  if [ -n "${LOCAL_AI_HUB_NODE_URL:-}" ]; then
+    url="$LOCAL_AI_HUB_NODE_URL"
+    archive_name=$(basename "$url")
+    dir_name=${archive_name%.tar.xz}
+    dir_name=${dir_name%.tar.gz}
+  else
+    version="$DEFAULT_NODE_VERSION"
+    dir_name="node-$version-$platform-$arch"
+    url="https://nodejs.org/dist/$version/$dir_name.tar.xz"
+  fi
+
+  archive_path="$download_root/$dir_name.tar.xz"
+  extract_path="$runtime_root/$dir_name"
+
+  if [ ! -x "$extract_path/bin/node" ] || [ ! -x "$extract_path/bin/npm" ]; then
+    if [ ! -f "$archive_path" ]; then
+      log "Downloading portable Node.js..."
+      log "$url"
+      download_file "$url" "$archive_path"
+    fi
+
+    rm -rf "$extract_path"
+    log "Extracting portable Node.js..."
+    tar -xf "$archive_path" -C "$runtime_root"
+  fi
+
+  printf '%s|%s\n' "$extract_path/bin/node" "$extract_path/bin/npm"
+}
+
+ensure_node_runtime() {
+  root="$1"
+  if pair=$(find_portable_node "$root"); then
+    printf '%s\n' "$pair"
+    return 0
+  fi
+
+  if pair=$(find_system_node); then
+    printf '%s\n' "$pair"
+    return 0
+  fi
+
+  download_portable_node "$root"
+}
+
+install_stamp_path() {
+  printf '%s\n' "$1/.local-runtime/npm-install.stamp"
+}
+
+need_install() {
+  root="$1"
+  [ ! -d "$root/node_modules" ] && return 0
+  stamp=$(install_stamp_path "$root")
+  [ ! -f "$stamp" ] && return 0
+  [ "$root/package.json" -nt "$stamp" ] && return 0
+  [ "$root/package-lock.json" -nt "$stamp" ] && return 0
+  return 1
+}
+
+touch_install_stamp() {
+  stamp=$(install_stamp_path "$1")
+  mkdir -p "$(dirname "$stamp")"
+  date -u '+%Y-%m-%dT%H:%M:%SZ' > "$stamp"
+}
+
+need_build() {
+  root="$1"
+  [ ! -f "$root/dist/index.js" ] && return 0
+  [ ! -f "$root/public/index.html" ] && return 0
+
+  output="$root/dist/index.js"
+  for path in "$root/package.json" "$root/package-lock.json" "$root/tsconfig.json" "$root/web/index.html" "$root/web/postcss.config.js" "$root/web/tailwind.config.ts" "$root/web/tsconfig.json" "$root/web/vite.config.ts"; do
+    [ -e "$path" ] && [ "$path" -nt "$output" ] && return 0
+  done
+
+  if find "$root/src" "$root/web/src" -type f -newer "$output" 2>/dev/null | grep -q .; then
+    return 0
+  fi
+
+  return 1
+}
+
+run_npm() {
+  root="$1"
+  shift
+  (cd "$root" && "$NPM_CMD" "$@")
+}
+
+health_ok() {
+  port="$1"
+  "$NODE_EXE" - "$port" <<'NODE'
+const http = require("http");
+const port = Number(process.argv[2]);
+const req = http.get({ host: "127.0.0.1", port, path: "/health", timeout: 1000 }, (res) => {
+  let body = "";
+  res.setEncoding("utf8");
+  res.on("data", (chunk) => { body += chunk; });
+  res.on("end", () => {
+    process.exit(body.includes('"ok":true') && body.includes('"service":"local-ai-hub"') ? 0 : 1);
+  });
+});
+req.on("error", () => process.exit(1));
+req.setTimeout(1000, () => {
+  req.destroy();
+  process.exit(1);
+});
+NODE
+}
+
+wait_for_health() {
+  port="$1"
+  seconds="$2"
+  i=0
+  while [ "$i" -lt "$seconds" ]; do
+    if health_ok "$port"; then
+      return 0
+    fi
+    sleep 1
+    i=$((i + 1))
+  done
+  return 1
+}
+
+open_browser() {
+  url="$1"
+  [ "$NO_OPEN" = "1" ] && return 0
+  if command -v open >/dev/null 2>&1; then
+    open "$url" >/dev/null 2>&1 || true
+  elif command -v xdg-open >/dev/null 2>&1; then
+    xdg-open "$url" >/dev/null 2>&1 || true
+  elif command -v gio >/dev/null 2>&1; then
+    gio open "$url" >/dev/null 2>&1 || true
+  else
+    log "Open this address in your browser: $url"
+  fi
+}
+
+stop_server() {
+  if [ -n "$SERVER_PID" ] && kill -0 "$SERVER_PID" >/dev/null 2>&1; then
+    log "Stopping Local AI Hub..."
+    kill "$SERVER_PID" >/dev/null 2>&1 || true
+  fi
+}
+
+start_server() {
+  root="$1"
+  log "Starting Local AI Hub..."
+  (
+    cd "$root"
+    exec "$NODE_EXE" dist/index.js
+  ) &
+  SERVER_PID=$!
+  trap stop_server INT TERM EXIT
+}
+
+print_launcher_info() {
+  header "Local AI Hub launcher info"
+  log "Version: $(launcher_version)"
+  log "Repository: $(repo_slug)"
+  log "Source archive: $(source_archive_url)"
+  log "Standalone app directory: $(resolve_app_root "$@")"
+}
+
+main() {
+  has_arg "--reinstall" "$@" && FORCE_INSTALL=1
+  has_arg "--rebuild" "$@" && FORCE_BUILD=1
+  has_arg "--update-app" "$@" && FORCE_APP_UPDATE=1
+  has_arg "--reset-app" "$@" && FORCE_APP_UPDATE=1
+  has_arg "--no-update-app" "$@" && NO_APP_UPDATE=1
+  has_arg "--prepare-only" "$@" && PREPARE_ONLY=1
+  has_arg "--no-open" "$@" && NO_OPEN=1
+
+  if has_arg "--launcher-info" "$@"; then
+    print_launcher_info "$@"
+    exit 0
+  fi
+
+  root=""
+  sd=$(script_dir)
+  if found=$(find_project_root_from "$sd" 2>/dev/null); then
+    root="$found"
+  elif found=$(find_project_root_from "$(pwd)" 2>/dev/null); then
+    root="$found"
+  else
+    root=$(ensure_standalone_project "$@")
+  fi
+
+  header "$APP_TITLE one-click launcher"
+  log "Project: $root"
+  log "Launcher version: $(launcher_version)"
+
+  ensure_env_file "$root"
+  port=$(read_port "$root")
+  url="http://127.0.0.1:$port"
+
+  pair=$(ensure_node_runtime "$root")
+  NODE_EXE=${pair%|*}
+  NPM_CMD=${pair#*|}
+  log "Node: $NODE_EXE"
+
+  if [ "$FORCE_INSTALL" = "1" ] || need_install "$root"; then
+    log "Installing dependencies..."
+    run_npm "$root" ci --no-audit --no-fund
+    touch_install_stamp "$root"
+  else
+    log "Dependencies: already installed"
+  fi
+
+  if [ "$FORCE_BUILD" = "1" ] || need_build "$root"; then
+    log "Building application..."
+    run_npm "$root" run build
+  else
+    log "Build: already up to date"
+  fi
+
+  if [ "$PREPARE_ONLY" = "1" ]; then
+    log "Prepare-only mode completed."
+    exit 0
+  fi
+
+  if health_ok "$port"; then
+    log "$APP_TITLE is already running at $url"
+    open_browser "$url"
+    exit 0
+  fi
+
+  start_server "$root"
+  if ! wait_for_health "$port" 90; then
+    fail "Server did not become healthy within 90 seconds. Check the console output above."
+  fi
+
+  log "$APP_TITLE is running: $url"
+  open_browser "$url"
+  log ""
+  log "Keep this window open while using $APP_TITLE."
+  log "Press Ctrl+C to stop the service."
+  wait "$SERVER_PID"
+}
+
+main "$@"

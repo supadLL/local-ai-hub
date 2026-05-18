@@ -14,6 +14,7 @@ const en = {
     overview: "Overview",
     import: "Account Import",
     keys: "Local Keys",
+    usage: "Usage Stats",
     activity: "Activity",
     settings: "Settings"
   } satisfies Record<TabId, string>,
@@ -29,6 +30,10 @@ const en = {
     keys: {
       title: "Local Keys",
       subtitle: "Issue local API keys and control model scope, quota, and RPM."
+    },
+    usage: {
+      title: "Usage Stats",
+      subtitle: "Total gateway consumption across upstream accounts, keys, and recent proxy activity."
     },
     activity: {
       title: "Activity",
@@ -143,6 +148,18 @@ const en = {
     quotaUnsupportedTitle: "No standard quota endpoint",
     quotaUnsupportedCopy: "OpenAI-compatible providers do not share a universal balance API. The gateway shows local usage now and will display rate-limit windows when upstream headers provide them.",
     quotaFromHeaders: "Inferred from upstream rate-limit headers.",
+    quotaFromProvider: "Fetched live from the ChatGPT Codex usage endpoint.",
+    refreshQuota: "Refresh quota",
+    quotaRefreshed: (name: string) => `Quota refreshed for ${name}.`,
+    primaryRateLimit: "Rate limit",
+    secondaryRateLimit: "Secondary limit",
+    codeReviewRateLimit: "Code review limit",
+    additionalRateLimit: "Additional limit",
+    used: "used",
+    limitReached: "Limit reached",
+    quotaOk: "OK",
+    planType: "Plan",
+    quotaUpdated: "Updated",
     remainingRequests: "Remaining",
     limitRequests: "Limit",
     resetAt: "Reset",
@@ -212,6 +229,30 @@ const en = {
     toggled: (enabled: boolean) => `Client key ${enabled ? "enabled" : "disabled"}.`,
     deleted: "Client key deleted."
   },
+  usagePage: {
+    totalUnits: "Consumed units",
+    totalRequests: "Requests",
+    averageUnits: "Avg / request",
+    activeAccounts: "Active accounts",
+    activeKeys: "Active keys",
+    quotaAverage: "Quota used",
+    limitedAccounts: "Limited accounts",
+    recentUnits: "Window units",
+    minutes5: "5 min",
+    hour1: "1 hour",
+    day1: "1 day",
+    last6h: "Last 6h",
+    last24h: "Last 24h",
+    last3d: "Last 3d",
+    last7d: "Last 7d",
+    last30d: "Last 30d",
+    all: "All",
+    chartTitle: "Recent Consumption",
+    unitsLine: "Usage units",
+    requestsLine: "Requests",
+    noUsage: "No proxy usage in this window.",
+    sourceNote: "Totals use persisted upstream counters; the chart uses the latest proxy logs retained by the console."
+  },
   activity: {
     title: "Recent Logs",
     copy: "Local key changes, upstream probes, proxy requests, and failover attempts."
@@ -241,7 +282,7 @@ const en = {
 
 export type Messages = typeof en;
 
-const zh: Messages = {
+const zh = {
   language: {
     current: "中文",
     toggle: "EN",
@@ -380,6 +421,18 @@ const zh: Messages = {
     quotaUnsupportedTitle: "暂无统一额度接口",
     quotaUnsupportedCopy: "通用 OpenAI-compatible Provider 没有统一余额 API。当前网关会展示本地用量；当上游响应头提供速率窗口时，会自动展示可推断额度。",
     quotaFromHeaders: "根据上游 rate-limit 响应头推断。",
+    quotaFromProvider: "实时读取自 ChatGPT Codex 用量接口。",
+    refreshQuota: "刷新额度",
+    quotaRefreshed: (name: string) => `${name} 的额度已刷新。`,
+    primaryRateLimit: "主额度窗口",
+    secondaryRateLimit: "次级额度窗口",
+    codeReviewRateLimit: "Code Review 额度",
+    additionalRateLimit: "附加额度",
+    used: "已用",
+    limitReached: "已达上限",
+    quotaOk: "OK",
+    planType: "套餐",
+    quotaUpdated: "更新时间",
     remainingRequests: "剩余",
     limitRequests: "上限",
     resetAt: "重置",
@@ -476,7 +529,64 @@ const zh: Messages = {
   }
 };
 
+const zhUsageOverrides = {
+  tabs: {
+    usage: "用量统计"
+  },
+  pages: {
+    usage: {
+      title: "用量统计",
+      subtitle: "汇总上游账号、本地 Key 和最近代理请求的整体消耗。"
+    }
+  },
+  usagePage: {
+    totalUnits: "消耗单位",
+    totalRequests: "请求数",
+    averageUnits: "平均 / 请求",
+    activeAccounts: "活跃账号",
+    activeKeys: "活跃 Key",
+    quotaAverage: "额度已用",
+    limitedAccounts: "受限账号",
+    recentUnits: "窗口单位",
+    minutes5: "5 分钟",
+    hour1: "1 小时",
+    day1: "1 天",
+    last6h: "最近 6h",
+    last24h: "最近 24h",
+    last3d: "最近 3 天",
+    last7d: "最近 7 天",
+    last30d: "最近 30 天",
+    all: "全部",
+    chartTitle: "最近消耗",
+    unitsLine: "用量单位",
+    requestsLine: "请求数",
+    noUsage: "当前时间窗口内暂无代理用量。",
+    sourceNote: "总量来自已持久化的上游计数；曲线来自控制台保留的最近代理日志。"
+  }
+};
+
+function mergeMessages<T>(base: T, override: unknown): T {
+  if (!override || typeof override !== "object" || Array.isArray(override)) {
+    return base;
+  }
+
+  const merged: Record<string, unknown> = { ...(base as Record<string, unknown>) };
+  for (const [key, value] of Object.entries(override)) {
+    const baseValue = merged[key];
+    merged[key] =
+      baseValue &&
+      value &&
+      typeof baseValue === "object" &&
+      typeof value === "object" &&
+      !Array.isArray(baseValue) &&
+      !Array.isArray(value)
+        ? mergeMessages(baseValue, value)
+        : value;
+  }
+  return merged as T;
+}
+
 export const dictionaries: Record<Language, Messages> = {
   en,
-  zh
+  zh: mergeMessages(mergeMessages(en, zh), zhUsageOverrides)
 };

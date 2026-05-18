@@ -1,5 +1,6 @@
 import {
   Activity,
+  BarChart3,
   DownloadCloud,
   Gauge,
   KeyRound,
@@ -14,6 +15,7 @@ const tabs: Array<{ id: TabId; icon: typeof LayoutDashboard }> = [
   { id: "overview", icon: LayoutDashboard },
   { id: "import", icon: DownloadCloud },
   { id: "keys", icon: KeyRound },
+  { id: "usage", icon: BarChart3 },
   { id: "activity", icon: Activity },
   { id: "settings", icon: Settings }
 ];

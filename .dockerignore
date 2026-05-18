@@ -1,9 +1,12 @@
 node_modules
 dist
 public
+data
 .env
-data/state.json
+.git
+.github
 .local-runtime
 .local-build
+release
 LocalAIHub.exe
-release/
+npm-debug.log*

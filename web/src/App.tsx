@@ -7,6 +7,7 @@ import { LocalKeys } from "./components/LocalKeys";
 import { Overview } from "./components/Overview";
 import { SettingsPage } from "./components/SettingsPage";
 import { Shell } from "./components/Shell";
+import { UsageStats } from "./components/UsageStats";
 import { dictionaries, languageStorageKey, type Language } from "./i18n";
 import type {
   AdminState,
@@ -19,7 +20,7 @@ import type {
   UpstreamProbeResult
 } from "./types";
 
-const visibleTabIds: TabId[] = ["overview", "import", "keys", "activity", "settings"];
+const visibleTabIds: TabId[] = ["overview", "import", "keys", "usage", "activity", "settings"];
 
 function readTabFromHash(): TabId {
   const value = window.location.hash.replace("#", "");
@@ -99,6 +100,16 @@ export function App() {
     setAdminState(next);
   }
 
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      api
+        .state()
+        .then(setAdminState)
+        .catch(() => undefined);
+    }, 3500);
+    return () => window.clearInterval(timer);
+  }, []);
+
   async function createUpstream(payload: UpstreamCreateInput) {
     await api.createUpstream(payload);
     showFeedback(i18n.importPage.created(payload.name));
@@ -127,6 +138,11 @@ export function App() {
     const result = await api.healthCheckUpstreams(ids);
     await refreshState();
     return result;
+  }
+
+  async function refreshUpstreamQuota(id: string) {
+    await api.refreshUpstreamQuota(id);
+    await refreshState();
   }
 
   async function deleteUpstream(id: string, name: string) {
@@ -224,6 +240,7 @@ export function App() {
             onTestSaved={testSavedUpstream}
             onHealthCheck={healthCheckUpstreams}
             onDeleteSaved={deleteUpstream}
+            onRefreshQuota={refreshUpstreamQuota}
             onRefreshState={refreshState}
             onOAuthLogin={startOpenAIOAuthLogin}
             onOAuthRelay={relayOpenAIOAuthCallback}
@@ -242,6 +259,8 @@ export function App() {
             onFeedback={showFeedback}
           />
         ) : null}
+
+        {activeTab === "usage" ? <UsageStats state={adminState} i18n={i18n} /> : null}
 
         {activeTab === "activity" ? (
           <ActivityPage

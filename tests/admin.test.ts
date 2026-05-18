@@ -155,6 +155,123 @@ describe("backend upstream management", () => {
     expect(state.logs[0]?.message).toContain("Health checked upstream");
   });
 
+  it("refreshes Codex OAuth quota from the live usage endpoint shape", async () => {
+    const harness = await createTestHarness({
+      upstreams: [
+        {
+          id: "upstream_oauth_quota",
+          name: "OpenAI Login",
+          provider: "openai-oauth",
+          baseUrl: "https://chatgpt.com/backend-api",
+          apiKey: "oauth-access-token",
+          refreshToken: null,
+          tokenExpiresAt: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+          accountEmail: "me@example.com",
+          accountSubject: "user-subject",
+          models: ["codex"],
+          enabled: true,
+          weight: 1,
+          headers: {},
+          note: "",
+          createdAt: "2026-05-18T00:00:00.000Z",
+          updatedAt: "2026-05-18T00:00:00.000Z"
+        }
+      ]
+    });
+    cleanups.push(harness.cleanup);
+
+    const usageBody = {
+      plan_type: "plus",
+      rate_limit: {
+        allowed: true,
+        limit_reached: false,
+        primary_window: {
+          used_percent: 42.4,
+          reset_at: 1893456000,
+          limit_window_seconds: 10800
+        },
+        secondary_window: {
+          used_percent: 12,
+          reset_at: 1894060800,
+          limit_window_seconds: 604800
+        }
+      },
+      additional_rate_limits: [
+        {
+          metered_feature: "code_review",
+          limit_name: "Code Review",
+          rate_limit: {
+            allowed: true,
+            limit_reached: false,
+            primary_window: {
+              used_percent: 64,
+              reset_at: 1893459600,
+              limit_window_seconds: 3600
+            }
+          }
+        },
+        {
+          metered_feature: "image_generation",
+          limit_name: "Image Generation",
+          rate_limit: {
+            allowed: true,
+            limit_reached: false,
+            primary_window: {
+              used_percent: 20,
+              reset_at: 1893463200,
+              limit_window_seconds: 86400
+            }
+          }
+        }
+      ]
+    };
+    const fetchMock = vi.fn<typeof fetch>().mockResolvedValueOnce(
+      new Response(JSON.stringify(usageBody), {
+        status: 200,
+        headers: {
+          "content-type": "application/json"
+        }
+      })
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const response = await harness.request.post("/api/admin/upstreams/upstream_oauth_quota/quota").send({});
+
+    expect(response.status).toBe(200);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://chatgpt.com/backend-api/wham/usage",
+      expect.objectContaining({
+        method: "GET"
+      })
+    );
+    expect(response.body.quota).toMatchObject({
+      supported: true,
+      status: "available",
+      source: "provider-api",
+      planType: "plus",
+      usedPercent: 42,
+      rateLimit: {
+        usedPercent: 42,
+        limitWindowSeconds: 10800
+      },
+      secondaryRateLimit: {
+        usedPercent: 12,
+        limitWindowSeconds: 604800
+      },
+      codeReviewRateLimit: {
+        usedPercent: 64,
+        limitWindowSeconds: 3600
+      }
+    });
+    expect(response.body.quota.additionalRateLimits).toHaveLength(2);
+
+    const state = await harness.store.readState();
+    expect(state.upstreams[0]?.quota?.planType).toBe("plus");
+    expect(state.upstreams[0]?.quota?.additionalRateLimits?.[1]?.id).toBe("image_generation");
+    expect(state.logs[0]?.message).toContain("Refreshed quota for upstream OpenAI Login");
+  });
+
   it("deletes a saved upstream account", async () => {
     const harness = await createTestHarness({
       upstreams: [

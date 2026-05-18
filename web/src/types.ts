@@ -20,10 +20,30 @@ export interface UpstreamQuotaSnapshot {
   source: "response-headers" | "provider-api" | "local";
   message: string;
   fetchedAt?: string | null;
+  planType?: string | null;
+  limitReached?: boolean;
   limitRequests?: number | null;
   remainingRequests?: number | null;
   usedPercent?: number | null;
   resetRequests?: string | null;
+  rateLimit?: UpstreamQuotaWindow | null;
+  secondaryRateLimit?: UpstreamQuotaWindow | null;
+  codeReviewRateLimit?: UpstreamQuotaWindow | null;
+  additionalRateLimits?: UpstreamQuotaLimitBucket[];
+}
+
+export interface UpstreamQuotaWindow {
+  allowed?: boolean | null;
+  limitReached?: boolean;
+  usedPercent?: number | null;
+  resetAt?: string | null;
+  limitWindowSeconds?: number | null;
+}
+
+export interface UpstreamQuotaLimitBucket extends UpstreamQuotaWindow {
+  id: string;
+  name?: string | null;
+  secondaryRateLimit?: UpstreamQuotaWindow | null;
 }
 
 export interface UpstreamAccount {
@@ -155,4 +175,4 @@ export interface CCSwitchOpenResponse {
   importUrl: string;
 }
 
-export type TabId = "overview" | "import" | "keys" | "activity" | "settings";
+export type TabId = "overview" | "import" | "keys" | "usage" | "activity" | "settings";

@@ -6,6 +6,7 @@ import { buildCCSwitchImportUrl } from "../services/ccswitch.js";
 import { fetchCodexModels, fetchCodexUsageSnapshot } from "../services/codex-backend.js";
 import { createId, createOpaqueKey, maskSecret, nowIso } from "../services/keys.js";
 import {
+  ensureFreshOAuthUpstream,
   probeOAuthUpstream,
   relayOpenAIOAuthCallback,
   startOpenAIOAuthLogin
@@ -532,6 +533,59 @@ export function createAdminRouter(store: FileStore): express.Router {
         { persistStatus: true }
       );
       res.json(result);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.post("/upstreams/:id/quota", async (req, res, next) => {
+    try {
+      const state = await store.readState();
+      const upstream = state.upstreams.find((item) => item.id === req.params.id);
+      if (!upstream) {
+        throw Object.assign(new Error("upstream_not_found"), { statusCode: 404 });
+      }
+
+      const checkedAt = nowIso();
+      if (upstream.provider !== "openai-oauth") {
+        const quota = upstream.quota ?? createUnknownQuotaSnapshot(checkedAt);
+        res.json({ quota });
+        return;
+      }
+
+      if (!upstream.enabled) {
+        throw Object.assign(new Error("upstream_disabled"), { statusCode: 409 });
+      }
+
+      const freshUpstream = await ensureFreshOAuthUpstream(store, upstream);
+      const quota =
+        (await fetchCodexUsageSnapshot(freshUpstream, checkedAt, { requestId: getRequestId(res) })) ??
+        createUnknownQuotaSnapshot(checkedAt);
+
+      await store.mutate((draft) => {
+        const persisted = draft.upstreams.find((item) => item.id === upstream.id);
+        if (persisted) {
+          persisted.apiKey = freshUpstream.apiKey;
+          persisted.refreshToken = freshUpstream.refreshToken ?? persisted.refreshToken ?? null;
+          persisted.tokenExpiresAt = freshUpstream.tokenExpiresAt ?? persisted.tokenExpiresAt ?? null;
+          persisted.quota = quota;
+          persisted.lastProbeOk = quota.supported ? true : persisted.lastProbeOk ?? null;
+          persisted.lastProbeError = quota.supported ? null : persisted.lastProbeError ?? null;
+          persisted.updatedAt = checkedAt;
+        }
+
+        draft.logs.unshift(
+          adminLog(`Refreshed quota for upstream ${upstream.name}.`, {
+            upstreamId: upstream.id,
+            provider: upstream.provider,
+            quotaStatus: quota.status,
+            planType: quota.planType ?? null,
+            usedPercent: quota.usedPercent ?? null
+          })
+        );
+      });
+
+      res.json({ quota });
     } catch (error) {
       next(error);
     }

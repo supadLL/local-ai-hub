@@ -1,0 +1,245 @@
+name: Build Release Artifacts
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - "**"
+    tags:
+      - "v*"
+  pull_request:
+
+permissions:
+  contents: write
+  packages: write
+
+env:
+  NODE_VERSION: 22
+
+jobs:
+  windows:
+    name: Windows EXE
+    runs-on: windows-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm test
+
+      - name: Build app
+        run: npm run build
+
+      - name: Compute launcher metadata
+        shell: pwsh
+        run: |
+          $version = if ("${{ github.ref_type }}" -eq "tag") { "${{ github.ref_name }}" } else { "${{ github.sha }}" }
+          $sourceArchiveUrl = "https://github.com/${{ github.repository }}/archive/${{ github.sha }}.zip"
+
+          "LAH_BUILD_VERSION=$version" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "LAH_REPO_SLUG=${{ github.repository }}" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "LAH_SOURCE_ARCHIVE_URL=$sourceArchiveUrl" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Build Windows launcher
+        run: npm run build:launcher
+
+      - name: Prepare Windows artifact
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path release/windows | Out-Null
+          Copy-Item -LiteralPath LocalAIHub.exe -Destination release/windows/LocalAIHub.exe -Force
+          Copy-Item -LiteralPath WINDOWS-ONE-CLICK.zh-CN.md -Destination release/windows/WINDOWS-ONE-CLICK.zh-CN.md -Force
+
+          [ordered]@{
+            name = "local-ai-hub"
+            platform = "windows"
+            version = $env:LAH_BUILD_VERSION
+            repository = "${{ github.repository }}"
+            commit = "${{ github.sha }}"
+            sourceArchiveUrl = $env:LAH_SOURCE_ARCHIVE_URL
+            builtAt = (Get-Date).ToUniversalTime().ToString("o")
+          } | ConvertTo-Json | Set-Content -LiteralPath release/windows/version-windows.json -Encoding UTF8
+
+      - name: Upload Windows artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: LocalAIHub-Windows
+          path: release/windows/*
+
+  unix:
+    name: Linux and macOS launchers
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Compute launcher metadata
+        shell: bash
+        run: |
+          if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
+            version="${GITHUB_REF_NAME}"
+          else
+            version="${GITHUB_SHA}"
+          fi
+
+          {
+            echo "LAH_BUILD_VERSION=${version}"
+            echo "LAH_REPO_SLUG=${GITHUB_REPOSITORY}"
+            echo "LAH_SOURCE_ARCHIVE_URL=https://github.com/${GITHUB_REPOSITORY}/archive/${GITHUB_SHA}.zip"
+          } >> "$GITHUB_ENV"
+
+      - name: Build Unix launchers
+        shell: pwsh
+        run: ./scripts/build-unix-launchers.ps1
+
+      - name: Package Linux and macOS artifacts
+        shell: bash
+        run: |
+          set -euo pipefail
+          chmod +x release/linux/LocalAIHub.sh
+          chmod +x release/macos/LocalAIHub.command
+          chmod +x release/linux/LocalAIHub.desktop
+
+          tar -czf release/LocalAIHub-linux-universal.tar.gz -C release/linux .
+          (cd release/macos && zip -qr ../LocalAIHub-macos-universal.zip .)
+
+      - name: Upload Linux and macOS artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: LocalAIHub-Unix
+          path: |
+            release/LocalAIHub-linux-universal.tar.gz
+            release/LocalAIHub-macos-universal.zip
+
+  docker:
+    name: Docker image
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Compute Docker metadata
+        shell: bash
+        run: |
+          image_name="ghcr.io/${GITHUB_REPOSITORY,,}"
+          if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
+            version="${GITHUB_REF_NAME}"
+          else
+            version="${GITHUB_SHA}"
+          fi
+
+          {
+            echo "IMAGE_NAME=${image_name}"
+            echo "IMAGE_VERSION=${version}"
+          } >> "$GITHUB_ENV"
+
+      - name: Build Docker image
+        shell: bash
+        run: |
+          set -euo pipefail
+          tags=(-t "${IMAGE_NAME}:${GITHUB_SHA}")
+
+          if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
+            tags+=(-t "${IMAGE_NAME}:${GITHUB_REF_NAME}")
+          fi
+
+          if [ "${GITHUB_REF_NAME}" = "main" ]; then
+            tags+=(-t "${IMAGE_NAME}:latest")
+          fi
+
+          docker build "${tags[@]}" .
+
+      - name: Save Docker image artifact
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p release/docker
+          docker save "${IMAGE_NAME}:${GITHUB_SHA}" | gzip > release/docker/local-ai-hub-docker-image.tar.gz
+          cat > release/docker/version-docker.json <<EOF
+          {
+            "name": "local-ai-hub",
+            "platform": "docker",
+            "image": "${IMAGE_NAME}",
+            "version": "${IMAGE_VERSION}",
+            "commit": "${GITHUB_SHA}",
+            "builtAt": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+          }
+          EOF
+
+      - name: Push Docker image to GHCR
+        if: github.event_name != 'pull_request'
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+          docker push "${IMAGE_NAME}:${GITHUB_SHA}"
+
+          if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
+            docker push "${IMAGE_NAME}:${GITHUB_REF_NAME}"
+          fi
+
+          if [ "${GITHUB_REF_NAME}" = "main" ]; then
+            docker push "${IMAGE_NAME}:latest"
+          fi
+
+      - name: Upload Docker artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: LocalAIHub-Docker
+          path: release/docker/*
+
+  release:
+    name: Publish GitHub Release
+    runs-on: ubuntu-latest
+    needs:
+      - windows
+      - unix
+      - docker
+    if: startsWith(github.ref, 'refs/tags/')
+
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-artifacts
+
+      - name: Publish release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          tag="${GITHUB_REF_NAME}"
+          cat > RELEASE_NOTES.md <<'EOF'
+          Download the artifact for your platform and run it to start Local AI Hub.
+
+          - Windows: download LocalAIHub.exe and double-click it.
+          - Linux: download LocalAIHub-linux-universal.tar.gz, extract it, then run ./LocalAIHub.sh.
+          - macOS: download LocalAIHub-macos-universal.zip, extract it, then double-click LocalAIHub.command or run it in Terminal.
+          - Docker: use the GHCR image, or download local-ai-hub-docker-image.tar.gz and run docker load.
+
+          Default local URL: http://127.0.0.1:4100
+          EOF
+
+          mapfile -t files < <(find release-artifacts -type f | sort)
+
+          if gh release view "$tag" --repo "${GITHUB_REPOSITORY}" >/dev/null 2>&1; then
+            gh release upload "$tag" "${files[@]}" --repo "${GITHUB_REPOSITORY}" --clobber
+          else
+            gh release create "$tag" "${files[@]}" \
+              --repo "${GITHUB_REPOSITORY}" \
+              --title "Local AI Hub $tag" \
+              --notes-file RELEASE_NOTES.md
+          fi
