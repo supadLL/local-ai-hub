@@ -11,6 +11,7 @@
     "build:launcher": "powershell -ExecutionPolicy Bypass -File scripts/build-launcher.ps1",
     "build:launchers": "powershell -ExecutionPolicy Bypass -File scripts/build-unix-launchers.ps1",
     "build:web": "tsc -p web/tsconfig.json && vite build --config web/vite.config.ts",
+    "release:tag": "powershell -ExecutionPolicy Bypass -File scripts/create-release-tag.ps1",
     "start": "node dist/index.js",
     "test": "vitest run"
   },

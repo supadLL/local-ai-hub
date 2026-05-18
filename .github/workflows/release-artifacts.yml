@@ -2,11 +2,6 @@ name: Build Release Artifacts
 
 on:
   workflow_dispatch:
-    inputs:
-      release_version:
-        description: "Optional explicit release version, for example v26.1.1.1"
-        required: false
-        type: string
   push:
     branches:
       - "**"
@@ -24,7 +19,6 @@ concurrency:
 
 env:
   NODE_VERSION: 22
-  INITIAL_RELEASE_VERSION: v26.1.1.1
 
 jobs:
   version:
@@ -40,9 +34,6 @@ jobs:
       - name: Resolve release version
         id: version
         shell: bash
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          MANUAL_VERSION: ${{ github.event.inputs.release_version || '' }}
         run: |
           set -euo pipefail
 
@@ -50,39 +41,11 @@ jobs:
           source_archive_url="https://github.com/${GITHUB_REPOSITORY}/archive/${GITHUB_SHA}.zip"
           should_release="false"
 
-          next_version() {
-            latest="$(
-              gh api "repos/${GITHUB_REPOSITORY}/releases" --paginate --jq '.[].tag_name' 2>/dev/null \
-                | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$' \
-                | sort -V \
-                | tail -n 1 || true
-            )"
-
-            if [ -z "$latest" ]; then
-              printf '%s\n' "${INITIAL_RELEASE_VERSION}"
-              return 0
-            fi
-
-            version_body="${latest#v}"
-            IFS='.' read -r major minor patch build <<< "$version_body"
-            build=$((build + 1))
-            printf 'v%s.%s.%s.%s\n' "$major" "$minor" "$patch" "$build"
-          }
-
           if [ "${GITHUB_EVENT_NAME}" = "pull_request" ]; then
             release_version="pr-${GITHUB_SHA:0:12}"
           elif [ "${GITHUB_REF_TYPE}" = "tag" ]; then
             release_version="${GITHUB_REF_NAME}"
-            should_release="true"
-          elif [ "${GITHUB_EVENT_NAME}" = "workflow_dispatch" ]; then
-            if [ -n "$MANUAL_VERSION" ]; then
-              release_version="$MANUAL_VERSION"
-            else
-              release_version="$(next_version)"
-            fi
-            should_release="true"
-          elif [ "${GITHUB_REF_NAME}" = "main" ]; then
-            release_version="$(next_version)"
+            source_archive_url="https://github.com/${GITHUB_REPOSITORY}/archive/refs/tags/${GITHUB_REF_NAME}.zip"
             should_release="true"
           else
             release_version="${GITHUB_SHA:0:12}"
@@ -339,9 +302,8 @@ jobs:
           docker push "${image_name}:${GITHUB_SHA}"
           docker push "${image_name}:${version}"
 
-          if [ "${GITHUB_REF_NAME}" = "main" ]; then
-            docker push "${image_name}:latest"
-          fi
+          docker tag "${image_name}:${version}" "${image_name}:latest"
+          docker push "${image_name}:latest"
 
       - name: Upload Docker artifact
         uses: actions/upload-artifact@v4

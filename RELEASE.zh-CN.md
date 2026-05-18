@@ -27,21 +27,31 @@ Release 版本号使用四段式，初始版本为：
 v26.1.1.1
 ```
 
-每次推送到 `main` 分支时，workflow 会读取已有 Release，自动递增最后一段，例如：
+Release 只在推送 `v*` tag 时创建。版本号需要按最后一段递增，例如：
 
 ```text
 v26.1.1.1 -> v26.1.1.2 -> v26.1.1.3
 ```
 
-也可以手动运行 workflow 并填写指定版本号。版本号必须符合 `v数字.数字.数字.数字` 的格式。
+版本号必须符合 `v数字.数字.数字.数字` 的格式。可以使用脚本创建下一个版本 tag：
+
+```powershell
+npm run release:tag
+```
+
+创建并直接推送 tag：
+
+```powershell
+npm run release:tag -- -Push
+```
 
 ## 发布正式版本
 
 创建并推送 tag 即可自动发布 GitHub Release：
 
 ```powershell
-git tag v0.1.0
-git push origin v0.1.0
+git tag v26.1.1.1
+git push origin v26.1.1.1
 ```
 
 workflow 会把这些文件上传到 Release：

@@ -48,4 +48,4 @@
 npm run build:launcher
 ```
 
-如果希望其他人不克隆项目也能使用，推送到 `main` 后到 GitHub Release 下载自动构建出的 `LocalAIHub-v版本号-win-x64.exe` 即可。首次版本号从 `v26.1.1.1` 开始，后续自动递增。
+如果希望其他人不克隆项目也能使用，创建并推送 `v*` 版本 tag 后，到 GitHub Release 下载自动构建出的 `LocalAIHub-v版本号-win-x64.exe` 即可。首次版本号从 `v26.1.1.1` 开始，后续递增最后一段。

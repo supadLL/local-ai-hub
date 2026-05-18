@@ -48,7 +48,7 @@ Download the matching artifact from GitHub Releases:
 
 Run it from any local folder, or run the same launcher from the project root during development. On the first run it will create `.env` from `.env.example`, use an existing Node.js 20+ installation or download a portable Node.js runtime, install npm dependencies, build the app, start the service, and open `http://127.0.0.1:4100`.
 
-Releases are versioned automatically from `v26.1.1.1`; each new `main` build increments the final number. Release assets also include `latest.yml`, `latest-linux.yml`, `latest-mac.yml`, `version.json`, and `SHA256SUMS.txt`.
+Releases are created from version tags. The first release tag should be `v26.1.1.1`; future releases increment the final number, for example `v26.1.1.2`. Release assets also include `latest.yml`, `latest-linux.yml`, `latest-mac.yml`, `version.json`, and `SHA256SUMS.txt`.
 
 When the EXE is launched outside a source checkout, it downloads the matching source archive embedded at build time and installs the app under `%LOCALAPPDATA%\LocalAIHub\app`. Local runtime files stay in `.local-runtime`, while `.env` and `data` are preserved across app updates.
 
