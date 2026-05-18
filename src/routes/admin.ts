@@ -1,8 +1,9 @@
 import express from "express";
 import { z } from "zod";
 import { appConfig } from "../config.js";
-import { gptModelCatalog } from "../model-catalog.js";
+import { codexModelCatalog, gptModelCatalog } from "../model-catalog.js";
 import { buildCCSwitchImportUrl } from "../services/ccswitch.js";
+import { fetchCodexModels, fetchCodexUsageSnapshot } from "../services/codex-backend.js";
 import { createId, createOpaqueKey, maskSecret, nowIso } from "../services/keys.js";
 import {
   probeOAuthUpstream,
@@ -187,17 +188,46 @@ async function probeUpstream(
     const result = await probeOAuthUpstream(upstream);
     const latencyMs = Date.now() - startedAt;
     const checkedAt = nowIso();
+    let models: string[] = [...codexModelCatalog];
+    let statusCode = result.ok ? 200 : undefined;
+    let body: unknown;
+    let quota = upstream.quota ?? createUnknownQuotaSnapshot(checkedAt);
+
+    if (result.ok && result.tokens) {
+      const freshUpstream: UpstreamAccount = {
+        ...upstream,
+        apiKey: result.tokens.access_token,
+        refreshToken: result.tokens.refresh_token ?? upstream.refreshToken ?? null,
+        tokenExpiresAt: oauthTokenExpiresAt(result.tokens.expires_in)
+      };
+      try {
+        const modelProbe = await fetchCodexModels(freshUpstream, { requestId });
+        models = modelProbe.models.length > 0 ? modelProbe.models : models;
+        statusCode = modelProbe.statusCode;
+        body = modelProbe.body;
+      } catch (error) {
+        body = {
+          warning: error instanceof Error ? error.message : "Codex model discovery failed."
+        };
+      }
+      try {
+        quota = (await fetchCodexUsageSnapshot(freshUpstream, checkedAt, { requestId })) ?? quota;
+      } catch {
+        quota = quota ?? createUnknownQuotaSnapshot(checkedAt);
+      }
+    }
 
     await store.mutate((state) => {
       const persisted = state.upstreams.find((item) => item.id === upstream.id);
       if (persisted && options.persistStatus) {
         persisted.lastProbeAt = checkedAt;
         persisted.lastProbeOk = result.ok;
-        persisted.lastProbeStatusCode = result.ok ? 200 : null;
+        persisted.lastProbeStatusCode = statusCode ?? null;
         persisted.lastProbeLatencyMs = latencyMs;
         persisted.lastProbeError = result.ok ? null : result.error ?? "OAuth refresh failed.";
-        persisted.discoveredModels = ["codex"];
-        persisted.quota = persisted.quota ?? createUnknownQuotaSnapshot(checkedAt);
+        persisted.discoveredModels = result.ok ? models : persisted.discoveredModels ?? [];
+        persisted.models = result.ok ? models : persisted.models;
+        persisted.quota = quota;
         persisted.updatedAt = checkedAt;
 
         if (result.tokens) {
@@ -213,6 +243,7 @@ async function probeUpstream(
           ok: result.ok,
           provider: upstream.provider,
           latencyMs,
+          modelCount: result.ok ? models.length : 0,
           error: result.error
         })
       );
@@ -220,8 +251,9 @@ async function probeUpstream(
 
     return {
       ok: result.ok,
-      statusCode: result.ok ? 200 : undefined,
-      models: result.ok ? ["codex"] : undefined,
+      statusCode,
+      models: result.ok ? models : undefined,
+      body,
       error: result.error,
       latencyMs
     };

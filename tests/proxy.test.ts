@@ -208,6 +208,138 @@ describe("proxy failover behavior", () => {
     expect(ids).not.toContain("gpt-5*");
   });
 
+  it("exposes Codex-capable models for legacy OAuth imports", async () => {
+    const harness = await createTestHarness({
+      upstreams: [
+        {
+          id: "upstream_oauth_models",
+          name: "OpenAI Login",
+          provider: "openai-oauth",
+          baseUrl: "https://chatgpt.com/backend-api",
+          apiKey: "oauth-access-token",
+          refreshToken: null,
+          tokenExpiresAt: null,
+          accountEmail: "free@example.com",
+          accountSubject: "user_123",
+          models: ["codex"],
+          enabled: true,
+          weight: 1,
+          headers: {},
+          note: "",
+          createdAt: "2026-05-18T00:00:00.000Z",
+          updatedAt: "2026-05-18T00:00:00.000Z",
+          discoveredModels: ["codex"]
+        }
+      ]
+    });
+    cleanups.push(harness.cleanup);
+
+    const response = await harness.request.get("/v1/models");
+    const ids = response.body.data.map((item: { id: string }) => item.id);
+
+    expect(response.status).toBe(200);
+    expect(ids).toContain("gpt-5.5");
+    expect(ids).toContain("gpt-5.4");
+    expect(ids).toContain("gpt-5.3-codex");
+    expect(ids).not.toContain("gpt-5.5-pro");
+  });
+
+  it("translates Anthropic Messages requests to the Codex backend for OAuth accounts", async () => {
+    const harness = await createTestHarness({
+      upstreams: [
+        {
+          id: "upstream_oauth_messages",
+          name: "OpenAI Login",
+          provider: "openai-oauth",
+          baseUrl: "https://chatgpt.com/backend-api",
+          apiKey: "oauth-access-token",
+          refreshToken: null,
+          tokenExpiresAt: null,
+          accountEmail: "free@example.com",
+          accountSubject: "user_123",
+          models: ["codex"],
+          enabled: true,
+          weight: 1,
+          headers: {},
+          note: "",
+          createdAt: "2026-05-18T00:00:00.000Z",
+          updatedAt: "2026-05-18T00:00:00.000Z",
+          discoveredModels: ["codex"]
+        }
+      ],
+      clientKeys: [
+        {
+          id: "ck_messages",
+          name: "claude-code",
+          key: "lah_messages_key",
+          allowedModels: ["gpt-5*"],
+          enabled: true,
+          quotaLimit: 1000,
+          usedQuota: 0,
+          requestsPerMinute: 60,
+          currentWindowStart: 0,
+          currentWindowCount: 0,
+          note: "",
+          createdAt: "2026-05-18T00:00:00.000Z",
+          updatedAt: "2026-05-18T00:00:00.000Z"
+        }
+      ]
+    });
+    cleanups.push(harness.cleanup);
+
+    const streamBody = [
+      'event: response.output_text.delta\ndata: {"delta":"hello from codex"}\n\n',
+      'event: response.completed\ndata: {"response":{"id":"resp_codex","usage":{"input_tokens":3,"output_tokens":2,"total_tokens":5}}}\n\n'
+    ].join("");
+    const fetchMock = vi.fn<typeof fetch>().mockResolvedValueOnce(
+      new Response(streamBody, {
+        status: 200,
+        headers: {
+          "content-type": "text/event-stream"
+        }
+      })
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const response = await harness.request
+      .post("/v1/messages")
+      .set("x-api-key", "lah_messages_key")
+      .send({
+        model: "gpt-5.5",
+        max_tokens: 128,
+        messages: [{ role: "user", content: "hello" }]
+      });
+
+    expect(response.status).toBe(200);
+    expect(response.body.model).toBe("gpt-5.5");
+    expect(response.body.content[0]).toEqual({ type: "text", text: "hello from codex" });
+    expect(response.body.usage).toEqual({ input_tokens: 3, output_tokens: 2 });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://chatgpt.com/backend-api/codex/responses",
+      expect.objectContaining({
+        method: "POST"
+      })
+    );
+
+    const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    const requestBody = JSON.parse(String(init.body)) as Record<string, unknown>;
+    expect(requestBody).toMatchObject({
+      model: "gpt-5.5",
+      stream: true,
+      store: false
+    });
+    expect(requestBody.max_output_tokens).toBeUndefined();
+    expect(init.headers).toMatchObject({
+      authorization: "Bearer oauth-access-token",
+      originator: "Codex Desktop"
+    });
+
+    const state = await harness.store.readState();
+    expect(state.clientKeys[0]?.usedQuota).toBe(5);
+    expect(state.upstreams[0]?.requestCount).toBe(1);
+  });
+
   it("fails over to the next matching upstream on retryable upstream errors", async () => {
     const harness = await createTestHarness({
       upstreams: [

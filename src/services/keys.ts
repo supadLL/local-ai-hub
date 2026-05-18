@@ -25,6 +25,16 @@ export function extractBearerToken(req: Request): string | null {
   return token.trim();
 }
 
+export function extractLocalApiKey(req: Request): string | null {
+  const bearer = extractBearerToken(req);
+  if (bearer) {
+    return bearer;
+  }
+
+  const xApiKey = req.header("x-api-key")?.trim();
+  return xApiKey || null;
+}
+
 export function maskSecret(secret: string): string {
   if (secret.length <= 8) {
     return "*".repeat(secret.length);

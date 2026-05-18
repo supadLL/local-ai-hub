@@ -11,6 +11,7 @@ The project is intentionally small and self-contained: an Express/TypeScript bac
 - Import upstream accounts with an API-key form, batch JSON, or the local OpenAI OAuth flow.
 - Issue local client keys with model allowlists, per-minute request limits, and quota caps.
 - Proxy OpenAI-compatible `POST /v1/chat/completions`, `POST /v1/responses`, and `GET /v1/models`.
+- Proxy OpenAI OAuth accounts through the ChatGPT Codex backend for Codex/Claude Code style local use, including `POST /v1/messages`.
 - Support non-streaming requests and basic `stream: true` passthrough.
 - Track local request count, local usage units, probe status, and rate-limit signals inferred from upstream headers.
 - Show sanitized upstream account status without returning raw upstream secrets to the browser.
@@ -121,7 +122,7 @@ The login flow creates a local PKCE session, opens an OpenAI authorization URL, 
 
 The `1455` port is not arbitrary in practice: the public OpenAI client used by Codex-style login flows expects that callback URI. If your browser cannot reach the callback page, the UI also lets you paste the full callback URL manually.
 
-OAuth-imported accounts are saved in the local pool as `openai-oauth` accounts. They are useful for Codex-style backend access and probing, but they are not the same thing as a normal `api.openai.com/v1` API key.
+OAuth-imported accounts are saved in the local pool as `openai-oauth` accounts. They are not the same thing as a normal `api.openai.com/v1` API key: Local AI Hub translates local OpenAI/Anthropic-shaped requests to the ChatGPT Codex backend at `/backend-api/codex/responses`.
 
 ## Local Client Keys
 
@@ -178,12 +179,13 @@ Proxy endpoints:
 - `GET /v1/models`
 - `POST /v1/chat/completions`
 - `POST /v1/responses`
+- `POST /v1/messages`
 
 ## Model Catalog Notes
 
-The built-in catalog is a convenience list for selection and wildcard expansion. It is based on OpenAI model docs plus project-specific Codex-compatible IDs. Actual model availability still depends on your upstream account, provider, entitlement, and probe results.
+The built-in catalog is a convenience list for selection and wildcard expansion. Codex/OAuth accounts also refresh their visible model list from the Codex backend during health checks. Actual model availability still depends on your upstream account, provider, entitlement, and probe results.
 
-For example, the catalog can include `gpt-5.5-pro`, but a request will only succeed if the selected upstream account can actually access that model.
+`gpt-5.5-pro` is intentionally not listed as a selectable model; legacy requests for that ID are normalized to `gpt-5.5`.
 
 ## Testing
 

@@ -1,4 +1,5 @@
 import type { UpstreamAccount } from "../types.js";
+import { codexModelCatalog, looksLikeCodexModel, resolveCodexModel } from "../model-catalog.js";
 import { anyPatternMatches } from "./matching.js";
 
 export class UpstreamSelector {
@@ -9,12 +10,8 @@ export class UpstreamSelector {
   }
 
   pickSequence(upstreams: UpstreamAccount[], model: string): UpstreamAccount[] {
-    const candidates = upstreams.filter(
-      (upstream) =>
-        upstream.provider === "openai-compatible" &&
-        upstream.enabled &&
-        anyPatternMatches(upstream.models, model)
-    );
+    const resolvedModel = resolveCodexModel(model);
+    const candidates = upstreams.filter((upstream) => supportsModel(upstream, resolvedModel));
     if (candidates.length === 0) {
       return [];
     }
@@ -43,4 +40,26 @@ export class UpstreamSelector {
 
     return ordered;
   }
+}
+
+function supportsModel(upstream: UpstreamAccount, model: string): boolean {
+  if (!upstream.enabled) {
+    return false;
+  }
+
+  const modelPatterns = upstream.discoveredModels?.length ? upstream.discoveredModels : upstream.models;
+  if (anyPatternMatches(modelPatterns, model)) {
+    return true;
+  }
+
+  if (upstream.provider !== "openai-oauth") {
+    return false;
+  }
+
+  const legacyCodexImport = modelPatterns.includes("codex");
+  if (legacyCodexImport && looksLikeCodexModel(model)) {
+    return true;
+  }
+
+  return codexModelCatalog.some((catalogModel) => catalogModel === model);
 }

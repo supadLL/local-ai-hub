@@ -11,6 +11,7 @@ Local AI Hub 是一个本地优先、面向个人使用的 OpenAI-compatible 中
 - 通过 API Key 表单、批量 JSON 或本地 OpenAI OAuth 流程导入上游账号。
 - 签发本地客户端 Key，并配置模型允许范围、每分钟请求数和累计额度上限。
 - 转发 OpenAI-compatible 的 `POST /v1/chat/completions`、`POST /v1/responses` 和 `GET /v1/models`。
+- OAuth 导入的 OpenAI 账号会通过 ChatGPT Codex 后端转发，支持 Codex / Claude Code 本地使用方式，包括 `POST /v1/messages`。
 - 支持非流式请求和基础 `stream: true` 流式透传。
 - 记录本地请求次数、用量单位、账号测活状态，以及从上游响应头推断到的限速窗口信号。
 - 前端只展示脱敏后的上游账号状态，不回传真实上游密钥。
@@ -121,7 +122,7 @@ npm start
 
 `1455` 不是随便选的端口：Codex 风格的公开 OpenAI client 通常要求这个 callback URI。如果浏览器无法打开回调页，页面也提供了手动粘贴完整 callback URL 的兜底方式。
 
-OAuth 导入的账号会以 `openai-oauth` 类型进入本地账号池。它适合 Codex 风格的后端访问和测活，但它不是普通的 `api.openai.com/v1` API Key。
+OAuth 导入的账号会以 `openai-oauth` 类型进入本地账号池。它不是普通的 `api.openai.com/v1` API Key：Local AI Hub 会把本地 OpenAI / Anthropic 形态的请求翻译到 ChatGPT Codex 后端 `/backend-api/codex/responses`。
 
 ## 本地客户端 Key
 
@@ -178,12 +179,13 @@ curl http://127.0.0.1:4100/v1/chat/completions ^
 - `GET /v1/models`
 - `POST /v1/chat/completions`
 - `POST /v1/responses`
+- `POST /v1/messages`
 
 ## 模型目录说明
 
-内置模型目录主要用于前端选择和通配符展开，来源包括 OpenAI 模型文档和项目内的 Codex-compatible 模型 ID。实际能否调用成功，仍然取决于你的上游账号、Provider 权限、账号套餐和测活结果。
+内置模型目录主要用于前端选择和通配符展开。Codex/OAuth 账号在测活时也会从 Codex 后端刷新可见模型列表。实际能否调用成功，仍然取决于你的上游账号、Provider 权限、账号套餐和测活结果。
 
-例如目录中可以出现 `gpt-5.5-pro`，但只有当你的上游账号确实有这个模型权限时，请求才会成功。
+`gpt-5.5-pro` 不再作为可选模型展示；历史请求如果传入这个 ID，会被归一化到 `gpt-5.5`。
 
 ## 测试与构建
 

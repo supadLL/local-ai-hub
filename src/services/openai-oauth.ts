@@ -1,5 +1,6 @@
 import crypto from "node:crypto";
 import { createServer, type Server } from "node:http";
+import { codexModelCatalog } from "../model-catalog.js";
 import { createId, nowIso } from "./keys.js";
 import { createUnknownQuotaSnapshot } from "./upstream-status.js";
 import type { FileStore } from "../store/file-store.js";
@@ -113,7 +114,7 @@ function createOAuthUpstream(tokens: OAuthTokenResponse): UpstreamAccount {
     tokenExpiresAt: tokenExpiresAt(tokens.expires_in),
     accountEmail: email,
     accountSubject: subject,
-    models: ["codex"],
+    models: [...codexModelCatalog],
     enabled: true,
     weight: 1,
     headers: {},
@@ -125,7 +126,7 @@ function createOAuthUpstream(tokens: OAuthTokenResponse): UpstreamAccount {
     lastProbeStatusCode: 200,
     lastProbeLatencyMs: null,
     lastProbeError: null,
-    discoveredModels: ["codex"],
+    discoveredModels: [...codexModelCatalog],
     requestCount: 0,
     usedQuota: 0,
     lastUsedAt: null,
@@ -179,6 +180,49 @@ export async function refreshOAuthToken(refreshToken: string): Promise<OAuthToke
     throw new Error(`Token refresh failed (${response.status}): ${text}`);
   }
   return JSON.parse(text) as OAuthTokenResponse;
+}
+
+function shouldRefreshAccessToken(upstream: UpstreamAccount): boolean {
+  if (!upstream.refreshToken || !upstream.tokenExpiresAt) {
+    return false;
+  }
+  const expiresAt = Date.parse(upstream.tokenExpiresAt);
+  if (!Number.isFinite(expiresAt)) {
+    return false;
+  }
+  return expiresAt - Date.now() < 5 * 60 * 1000;
+}
+
+export async function ensureFreshOAuthUpstream(
+  store: FileStore,
+  upstream: UpstreamAccount
+): Promise<UpstreamAccount> {
+  if (upstream.provider !== "openai-oauth" || !shouldRefreshAccessToken(upstream)) {
+    return upstream;
+  }
+
+  const tokens = await refreshOAuthToken(upstream.refreshToken as string);
+  return store.mutate((state) => {
+    const persisted = state.upstreams.find((item) => item.id === upstream.id);
+    const now = nowIso();
+    if (!persisted) {
+      return {
+        ...upstream,
+        apiKey: tokens.access_token,
+        refreshToken: tokens.refresh_token ?? upstream.refreshToken ?? null,
+        tokenExpiresAt: tokenExpiresAt(tokens.expires_in),
+        updatedAt: now
+      };
+    }
+
+    persisted.apiKey = tokens.access_token;
+    persisted.refreshToken = tokens.refresh_token ?? persisted.refreshToken ?? null;
+    persisted.tokenExpiresAt = tokenExpiresAt(tokens.expires_in);
+    persisted.lastProbeOk = true;
+    persisted.lastProbeError = null;
+    persisted.updatedAt = now;
+    return structuredClone(persisted);
+  });
 }
 
 async function saveOAuthAccount(store: FileStore, tokens: OAuthTokenResponse): Promise<UpstreamAccount> {

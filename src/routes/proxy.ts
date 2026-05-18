@@ -1,7 +1,24 @@
 import express from "express";
-import { expandModelPatterns } from "../model-catalog.js";
-import { createId, extractBearerToken, nowIso } from "../services/keys.js";
+import { codexModelCatalog, expandModelPatterns, resolveCodexModel } from "../model-catalog.js";
+import {
+  collectCodexResponse,
+  forwardCodexResponse,
+  readStreamText,
+  streamResultToResponse
+} from "../services/codex-backend.js";
+import {
+  anthropicToCodexRequest,
+  chatCompletionToCodexRequest,
+  codexToAnthropicBody,
+  codexToChatCompletionBody,
+  codexToResponsesBody,
+  responsesToCodexRequest,
+  streamCodexToAnthropicSSE,
+  streamCodexToChatCompletionSSE
+} from "../services/codex-translation.js";
+import { createId, extractLocalApiKey, nowIso } from "../services/keys.js";
 import { anyPatternMatches } from "../services/matching.js";
+import { ensureFreshOAuthUpstream } from "../services/openai-oauth.js";
 import {
   forwardOpenAICompatibleRequest,
   forwardOpenAICompatibleStream,
@@ -46,6 +63,10 @@ class HttpError extends Error {
   ) {
     super(message);
   }
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 function proxyLog(
@@ -103,7 +124,8 @@ async function selectPreparations(
     if (!clientKey.enabled) {
       throw new HttpError("Local API key is disabled.", 403);
     }
-    if (!anyPatternMatches(clientKey.allowedModels, model)) {
+    const resolvedModel = resolveCodexModel(model);
+    if (!anyPatternMatches(clientKey.allowedModels, model) && !anyPatternMatches(clientKey.allowedModels, resolvedModel)) {
       throw new HttpError(`Model ${model} is not allowed for this local key.`, 403);
     }
     if (clientKey.quotaLimit !== null && clientKey.usedQuota >= clientKey.quotaLimit) {
@@ -216,6 +238,86 @@ async function pipeWebStreamToResponse(
   res.end();
 }
 
+async function writeTextChunksToResponse(chunks: AsyncGenerator<string>, res: express.Response): Promise<void> {
+  for await (const chunk of chunks) {
+    res.write(chunk);
+  }
+  res.end();
+}
+
+async function freshenOAuthPreparation(store: FileStore, prep: ProxyPreparation): Promise<ProxyPreparation> {
+  if (prep.upstream.provider !== "openai-oauth") {
+    return prep;
+  }
+  const upstream = await ensureFreshOAuthUpstream(store, prep.upstream);
+  return {
+    ...prep,
+    upstream
+  };
+}
+
+function codexRequestForOpenAIEndpoint(
+  endpoint: OpenAICompatibleEndpoint,
+  body: Record<string, unknown>
+): Record<string, unknown> {
+  return endpoint === "/v1/chat/completions"
+    ? (chatCompletionToCodexRequest(body) as unknown as Record<string, unknown>)
+    : (responsesToCodexRequest(body) as unknown as Record<string, unknown>);
+}
+
+function openAIEndpointBodyFromCodex(
+  endpoint: OpenAICompatibleEndpoint,
+  collected: Awaited<ReturnType<typeof collectCodexResponse>>,
+  requestedModel: string
+): Record<string, unknown> {
+  return endpoint === "/v1/chat/completions"
+    ? codexToChatCompletionBody(collected, requestedModel)
+    : codexToResponsesBody(collected, requestedModel);
+}
+
+async function forwardProviderRequest(
+  store: FileStore,
+  prep: ProxyPreparation,
+  endpoint: OpenAICompatibleEndpoint,
+  body: Record<string, unknown>,
+  requestId: string
+): Promise<{ prep: ProxyPreparation; forwarded: ForwardedResult }> {
+  const activePrep = await freshenOAuthPreparation(store, prep);
+  if (activePrep.upstream.provider !== "openai-oauth") {
+    return {
+      prep: activePrep,
+      forwarded: await forwardOpenAICompatibleRequest(activePrep.upstream, endpoint, body, { requestId })
+    };
+  }
+
+  const codexRequest = codexRequestForOpenAIEndpoint(endpoint, body);
+  const forwardedStream = await forwardCodexResponse(activePrep.upstream, codexRequest, { requestId });
+  if (forwardedStream.statusCode >= 400) {
+    return {
+      prep: activePrep,
+      forwarded: {
+        statusCode: forwardedStream.statusCode,
+        responseHeaders: forwardedStream.responseHeaders,
+        body: await readStreamBody(forwardedStream.body),
+        usageUnits: 0,
+        upstreamModel: typeof codexRequest.model === "string" ? codexRequest.model : undefined
+      }
+    };
+  }
+
+  const collected = await collectCodexResponse(streamResultToResponse(forwardedStream));
+  return {
+    prep: activePrep,
+    forwarded: {
+      statusCode: forwardedStream.statusCode,
+      responseHeaders: forwardedStream.responseHeaders,
+      body: openAIEndpointBodyFromCodex(endpoint, collected, resolveCodexModel(String(body.model))),
+      usageUnits: collected.usageUnits,
+      upstreamModel: typeof codexRequest.model === "string" ? codexRequest.model : undefined
+    }
+  };
+}
+
 async function recordSuccessfulProxy(
   store: FileStore,
   prep: ProxyPreparation,
@@ -276,11 +378,15 @@ async function handleOpenAICompatibleStream(
   let terminalResult: { prep: ProxyPreparation; forwarded: ForwardedResult } | null = null;
 
   for (let index = 0; index < preparations.length; index += 1) {
-    const prep = preparations[index];
+    let prep = preparations[index];
     const hasFallback = index < preparations.length - 1;
 
     try {
-      const forwarded = await forwardOpenAICompatibleStream(prep.upstream, endpoint, body, { requestId });
+      prep = await freshenOAuthPreparation(store, prep);
+      const forwarded =
+        prep.upstream.provider === "openai-oauth"
+          ? await forwardCodexResponse(prep.upstream, codexRequestForOpenAIEndpoint(endpoint, body), { requestId })
+          : await forwardOpenAICompatibleStream(prep.upstream, endpoint, body, { requestId });
       attempts.push({
         upstreamId: prep.upstream.id,
         upstreamName: prep.upstream.name,
@@ -292,7 +398,15 @@ async function handleOpenAICompatibleStream(
         const latencyMs = Date.now() - startedAt;
         applyPassthroughHeaders(res, forwarded);
         res.status(forwarded.statusCode);
-        await pipeWebStreamToResponse(forwarded.body, res);
+        if (prep.upstream.provider === "openai-oauth" && endpoint === "/v1/chat/completions") {
+          res.setHeader("content-type", "text/event-stream; charset=utf-8");
+          await writeTextChunksToResponse(
+            streamCodexToChatCompletionSSE(streamResultToResponse(forwarded), resolveCodexModel(model)),
+            res
+          );
+        } else {
+          await pipeWebStreamToResponse(forwarded.body, res);
+        }
         await recordSuccessfulProxy(
           store,
           prep,
@@ -387,11 +501,11 @@ async function handleOpenAICompatiblePost(
     const startedAt = Date.now();
     const requestId =
       typeof res.locals.requestId === "string" ? res.locals.requestId : createId("req");
-    const bearerToken = extractBearerToken(req);
-    if (!bearerToken) {
+    const localApiKey = extractLocalApiKey(req);
+    if (!localApiKey) {
       res.status(401).json({
         error: {
-          message: "Missing local API key in Authorization header.",
+          message: "Missing local API key in Authorization Bearer or x-api-key header.",
           type: "invalid_request_error"
         }
       });
@@ -422,7 +536,7 @@ async function handleOpenAICompatiblePost(
 
     let preparations: ProxyPreparation[];
     try {
-      preparations = await selectPreparations(store, selector, bearerToken, model, requestId);
+      preparations = await selectPreparations(store, selector, localApiKey, model, requestId);
     } catch (error) {
       if (error instanceof HttpError) {
         res.status(error.statusCode).json({
@@ -451,21 +565,22 @@ async function handleOpenAICompatiblePost(
       const hasFallback = index < preparations.length - 1;
 
       try {
-        const forwarded = await forwardOpenAICompatibleRequest(prep.upstream, endpoint, body, { requestId });
+        const result = await forwardProviderRequest(store, prep, endpoint, body, requestId);
+        const { forwarded } = result;
         attempts.push({
-          upstreamId: prep.upstream.id,
-          upstreamName: prep.upstream.name,
+          upstreamId: result.prep.upstream.id,
+          upstreamName: result.prep.upstream.name,
           statusCode: forwarded.statusCode,
           ok: forwarded.statusCode < 400,
           upstreamModel: forwarded.upstreamModel
         });
 
         if (forwarded.statusCode < 400) {
-          successfulResult = { prep, forwarded };
+          successfulResult = result;
           break;
         }
 
-        terminalResult = { prep, forwarded };
+        terminalResult = result;
         if (hasFallback && isRetryableUpstreamStatus(forwarded.statusCode)) {
           continue;
         }
@@ -498,6 +613,7 @@ async function handleOpenAICompatiblePost(
       );
 
       applyPassthroughHeaders(res, successfulResult.forwarded);
+      res.setHeader("content-type", "application/json; charset=utf-8");
       res.status(successfulResult.forwarded.statusCode).json(successfulResult.forwarded.body);
       return;
     }
@@ -520,6 +636,7 @@ async function handleOpenAICompatiblePost(
       });
 
       applyPassthroughHeaders(res, terminalResult.forwarded);
+      res.setHeader("content-type", "application/json; charset=utf-8");
       res.status(terminalResult.forwarded.statusCode).json(
         normalizeUpstreamErrorBody(
           terminalResult.forwarded.body,
@@ -541,6 +658,210 @@ async function handleOpenAICompatiblePost(
     res.status(502).json(buildNetworkErrorResponse(attempts));
 }
 
+function anthropicError(type: string, message: string): Record<string, unknown> {
+  return {
+    type: "error",
+    error: {
+      type,
+      message
+    }
+  };
+}
+
+async function handleAnthropicMessagesPost(
+  store: FileStore,
+  selector: UpstreamSelector,
+  req: express.Request,
+  res: express.Response,
+  next: express.NextFunction
+): Promise<void> {
+  const startedAt = Date.now();
+  const requestId = typeof res.locals.requestId === "string" ? res.locals.requestId : createId("req");
+  const localApiKey = extractLocalApiKey(req);
+  if (!localApiKey) {
+    res.status(401).json(anthropicError("authentication_error", "Missing local API key."));
+    return;
+  }
+
+  const body = req.body as Record<string, unknown>;
+  if (!body || typeof body !== "object" || Array.isArray(body)) {
+    res.status(400).json(anthropicError("invalid_request_error", "Request body must be JSON."));
+    return;
+  }
+
+  const model = typeof body.model === "string" ? body.model.trim() : "";
+  if (!model) {
+    res.status(400).json(anthropicError("invalid_request_error", "Request body must include a model name."));
+    return;
+  }
+  if (!Array.isArray(body.messages)) {
+    res.status(400).json(anthropicError("invalid_request_error", "Request body must include messages."));
+    return;
+  }
+
+  let preparations: ProxyPreparation[];
+  try {
+    preparations = await selectPreparations(store, selector, localApiKey, model, requestId);
+  } catch (error) {
+    if (error instanceof HttpError) {
+      res.status(error.statusCode).json(anthropicError("api_error", error.message));
+      return;
+    }
+    next(error);
+    return;
+  }
+
+  const attempts: ProxyAttemptSummary[] = [];
+  let terminalResult: { prep: ProxyPreparation; statusCode: number; body: unknown; headers: Record<string, string> } | null =
+    null;
+  const wantThinking =
+    isRecord(body.thinking) && (body.thinking.type === "enabled" || body.thinking.type === "adaptive");
+
+  for (let index = 0; index < preparations.length; index += 1) {
+    let prep = preparations[index];
+    const hasFallback = index < preparations.length - 1;
+
+    try {
+      prep = await freshenOAuthPreparation(store, prep);
+      if (prep.upstream.provider !== "openai-oauth") {
+        attempts.push({
+          upstreamId: prep.upstream.id,
+          upstreamName: prep.upstream.name,
+          statusCode: 503,
+          ok: false,
+          error: "/v1/messages requires an OpenAI OAuth Codex upstream."
+        });
+        if (hasFallback) {
+          continue;
+        }
+        terminalResult = {
+          prep,
+          statusCode: 503,
+          body: anthropicError("api_error", "/v1/messages requires an OpenAI OAuth Codex upstream."),
+          headers: {}
+        };
+        break;
+      }
+
+      const codexRequest = anthropicToCodexRequest(
+        body as unknown as Parameters<typeof anthropicToCodexRequest>[0]
+      );
+      const forwarded = await forwardCodexResponse(prep.upstream, codexRequest, { requestId });
+      attempts.push({
+        upstreamId: prep.upstream.id,
+        upstreamName: prep.upstream.name,
+        statusCode: forwarded.statusCode,
+        ok: forwarded.statusCode < 400,
+        upstreamModel: codexRequest.model
+      });
+
+      if (forwarded.statusCode < 400) {
+        const latencyMs = Date.now() - startedAt;
+        applyPassthroughHeaders(res, forwarded);
+
+        if (body.stream === true) {
+          res.status(forwarded.statusCode);
+          res.setHeader("content-type", "text/event-stream; charset=utf-8");
+          await writeTextChunksToResponse(
+            streamCodexToAnthropicSSE(streamResultToResponse(forwarded), resolveCodexModel(model), wantThinking),
+            res
+          );
+          await recordSuccessfulProxy(
+            store,
+            prep,
+            {
+              statusCode: forwarded.statusCode,
+              responseHeaders: forwarded.responseHeaders,
+              body: {},
+              usageUnits: 1,
+              upstreamModel: codexRequest.model
+            },
+            model,
+            latencyMs,
+            attempts
+          );
+          return;
+        }
+
+        const collected = await collectCodexResponse(streamResultToResponse(forwarded));
+        const responseBody = codexToAnthropicBody(collected, resolveCodexModel(model), wantThinking);
+        await recordSuccessfulProxy(
+          store,
+          prep,
+          {
+            statusCode: forwarded.statusCode,
+            responseHeaders: forwarded.responseHeaders,
+            body: responseBody,
+            usageUnits: collected.usageUnits,
+            upstreamModel: codexRequest.model
+          },
+          model,
+          latencyMs,
+          attempts
+        );
+        res.setHeader("content-type", "application/json; charset=utf-8");
+        res.status(forwarded.statusCode).json(responseBody);
+        return;
+      }
+
+      const errorText = await readStreamText(forwarded.body);
+      terminalResult = {
+        prep,
+        statusCode: forwarded.statusCode,
+        body: anthropicError("api_error", errorText || `Codex upstream returned HTTP ${forwarded.statusCode}.`),
+        headers: forwarded.responseHeaders
+      };
+      if (hasFallback && isRetryableUpstreamStatus(forwarded.statusCode)) {
+        continue;
+      }
+      break;
+    } catch (error) {
+      attempts.push({
+        upstreamId: prep.upstream.id,
+        upstreamName: prep.upstream.name,
+        statusCode: 502,
+        ok: false,
+        error: error instanceof Error ? error.message : "Unknown upstream error"
+      });
+
+      if (!hasFallback) {
+        terminalResult = {
+          prep,
+          statusCode: 502,
+          body: anthropicError("api_error", error instanceof Error ? error.message : "Unknown upstream error"),
+          headers: {}
+        };
+      }
+    }
+  }
+
+  const latencyMs = Date.now() - startedAt;
+  const terminalPrep = terminalResult?.prep ?? preparations.at(-1);
+  if (terminalPrep) {
+    await store.mutate((state) => {
+      state.logs.unshift(
+        proxyLog(
+          terminalPrep,
+          terminalResult?.statusCode ?? 502,
+          0,
+          latencyMs,
+          upstreamFailureMessage(model, attempts),
+          appendAttempts(attempts)
+        )
+      );
+    });
+  }
+
+  if (terminalResult) {
+    applyPassthroughHeaders(res, { responseHeaders: terminalResult.headers });
+    res.setHeader("content-type", "application/json; charset=utf-8");
+    res.status(terminalResult.statusCode).json(terminalResult.body);
+    return;
+  }
+
+  res.status(502).json(anthropicError("api_error", buildNetworkErrorResponse(attempts).error.message));
+}
+
 export function createProxyRouter(store: FileStore, selector: UpstreamSelector): express.Router {
   const router = express.Router();
 
@@ -549,11 +870,15 @@ export function createProxyRouter(store: FileStore, selector: UpstreamSelector):
       const state = await store.readState();
       const models = new Set<string>();
       for (const upstream of state.upstreams) {
-        if (!upstream.enabled || upstream.provider !== "openai-compatible") {
+        if (!upstream.enabled) {
           continue;
         }
         const upstreamModels = upstream.discoveredModels?.length ? upstream.discoveredModels : upstream.models;
-        for (const model of expandModelPatterns(upstreamModels)) {
+        const modelPatterns =
+          upstream.provider === "openai-oauth" && upstreamModels.includes("codex")
+            ? [...codexModelCatalog]
+            : upstreamModels;
+        for (const model of expandModelPatterns(modelPatterns)) {
           models.add(model);
         }
       }
@@ -576,6 +901,10 @@ export function createProxyRouter(store: FileStore, selector: UpstreamSelector):
 
   router.post("/v1/responses", (req, res, next) => {
     void handleOpenAICompatiblePost(store, selector, "/v1/responses", req, res, next).catch(next);
+  });
+
+  router.post("/v1/messages", (req, res, next) => {
+    void handleAnthropicMessagesPost(store, selector, req, res, next).catch(next);
   });
 
   return router;
