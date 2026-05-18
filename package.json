@@ -1,0 +1,41 @@
+{
+  "name": "local-ai-hub",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "A local-first AI gateway MVP for importing authorized upstream accounts and issuing local API keys.",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "dev:web": "vite --config web/vite.config.ts --host 127.0.0.1",
+    "build": "npm run build:web && tsc -p tsconfig.json",
+    "build:web": "tsc -p web/tsconfig.json && vite build --config web/vite.config.ts",
+    "start": "node dist/index.js",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.2",
+    "lucide-react": "^0.468.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.4",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.0",
+    "@types/node": "^22.13.4",
+    "@types/react": "^19.0.1",
+    "@types/react-dom": "^19.0.2",
+    "@types/supertest": "^6.0.3",
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.4.49",
+    "supertest": "^7.1.1",
+    "tailwindcss": "^3.4.17",
+    "tsx": "^4.19.3",
+    "vite": "^6.0.5",
+    "typescript": "^5.7.3",
+    "vitest": "^3.2.4"
+  }
+}

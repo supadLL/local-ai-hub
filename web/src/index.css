@@ -1,0 +1,84 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    min-width: 320px;
+  }
+
+  body {
+    @apply m-0 bg-canvas text-ink font-sans;
+    background:
+      linear-gradient(135deg, rgba(20, 115, 91, 0.08) 0 1px, transparent 1px 18px),
+      linear-gradient(180deg, #f8fafb 0%, #f5f7f8 100%);
+  }
+
+  button,
+  input,
+  textarea {
+    font: inherit;
+  }
+}
+
+@layer components {
+  .panel {
+    @apply rounded-control border border-slate-200 bg-white/95 shadow-sm;
+  }
+
+  .panel-head {
+    @apply flex items-center justify-between gap-3 border-b border-slate-200 px-5 py-4;
+  }
+
+  .panel-title {
+    @apply m-0 text-[15px] font-extrabold text-ink;
+  }
+
+  .panel-copy {
+    @apply m-0 mt-1 text-xs text-muted;
+  }
+
+  .field {
+    @apply grid gap-2;
+  }
+
+  .field-label {
+    @apply text-xs font-extrabold text-muted;
+  }
+
+  .input {
+    @apply w-full rounded-control border border-slate-200 bg-white px-3 py-2.5 text-sm text-ink outline-none transition focus:border-hub-500/70 focus:ring-4 focus:ring-hub-500/10;
+  }
+
+  .button {
+    @apply inline-flex min-h-10 items-center justify-center gap-2 rounded-control border border-transparent bg-hub-500 px-3.5 py-2 text-sm font-extrabold text-white transition hover:bg-hub-600 active:translate-y-px;
+  }
+
+  .button-secondary {
+    @apply border-slate-200 bg-white text-ink hover:bg-slate-50;
+  }
+
+  .button-danger {
+    @apply bg-signal-red text-white hover:bg-[#98351e];
+  }
+
+  .button-small {
+    @apply min-h-8 px-2.5 py-1.5 text-xs;
+  }
+
+  .chip {
+    @apply inline-flex min-h-6 items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-extrabold text-muted;
+  }
+
+  .chip-success {
+    @apply bg-hub-100 text-hub-600;
+  }
+
+  .chip-info {
+    @apply bg-blue-50 text-signal-blue;
+  }
+
+  .chip-warn {
+    @apply bg-amber-50 text-signal-amber;
+  }
+}
