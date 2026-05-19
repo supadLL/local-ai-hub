@@ -614,10 +614,15 @@ function usageDelta(usage: CodexUsageInfo): Record<string, number> {
   };
 }
 
+interface CodexStreamUsageOptions {
+  onUsage?: (usage: CodexUsageInfo) => void;
+}
+
 export async function* streamCodexToAnthropicSSE(
   response: Response,
   requestedModel: string,
-  wantThinking: boolean
+  wantThinking: boolean,
+  options: CodexStreamUsageOptions = {}
 ): AsyncGenerator<string> {
   const messageId = `msg_${crypto.randomUUID().replace(/-/g, "").slice(0, 24)}`;
   let contentIndex = 0;
@@ -674,6 +679,7 @@ export async function* streamCodexToAnthropicSSE(
     }
     if (event.usage) {
       usage = event.usage;
+      options.onUsage?.(event.usage);
     }
     if (event.reasoningDelta && wantThinking) {
       yield* closeText();
@@ -747,7 +753,8 @@ export async function* streamCodexToAnthropicSSE(
 
 export async function* streamCodexToChatCompletionSSE(
   response: Response,
-  requestedModel: string
+  requestedModel: string,
+  options: CodexStreamUsageOptions = {}
 ): AsyncGenerator<string> {
   const id = `chatcmpl_${crypto.randomUUID().replace(/-/g, "")}`;
   let hasTools = false;
@@ -757,6 +764,9 @@ export async function* streamCodexToChatCompletionSSE(
     if (event.error) {
       yield sse(null, { error: { message: event.error, type: "upstream_error" } });
       continue;
+    }
+    if (event.usage) {
+      options.onUsage?.(event.usage);
     }
     if (event.textDelta) {
       yield sse(null, {

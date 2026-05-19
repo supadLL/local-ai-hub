@@ -5,6 +5,10 @@ import type {
   ClientKey,
   ClientKeyCreateInput,
   OAuthLoginStartResponse,
+  UsageGranularity,
+  UsageHistoryRange,
+  UsageHistoryResponse,
+  UsageSummary,
   UpstreamHealthCheckResponse,
   UpstreamCreateInput,
   UpstreamQuotaSnapshot,
@@ -36,6 +40,13 @@ async function requestJson<T>(path: string, options: RequestInit = {}): Promise<
 
 export const api = {
   state: () => requestJson<AdminState>("/api/admin/state"),
+
+  usageSummary: () => requestJson<UsageSummary>("/api/admin/usage-stats/summary"),
+
+  usageHistory: (granularity: UsageGranularity, hours: UsageHistoryRange) =>
+    requestJson<UsageHistoryResponse>(
+      `/api/admin/usage-stats/history?granularity=${encodeURIComponent(granularity)}&hours=${encodeURIComponent(String(hours))}`
+    ),
 
   createUpstream: (upstream: UpstreamCreateInput) =>
     requestJson<{ upstream: unknown }>("/api/admin/upstreams", {

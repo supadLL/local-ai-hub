@@ -1,4 +1,5 @@
-import type { ForwardedResult, UpstreamAccount } from "../types.js";
+import type { ForwardedResult, TokenUsageDetails, UpstreamAccount } from "../types.js";
+import { extractTokenUsage, usageUnitsFromDetails } from "./usage.js";
 
 const RETRYABLE_STATUS_CODES = new Set([401, 403, 404, 408, 409, 425, 429, 500, 502, 503, 504]);
 
@@ -40,21 +41,6 @@ function normalizeBaseUrl(baseUrl: string): string {
 
 function buildOpenAICompatibleUrl(baseUrl: string, endpoint: OpenAICompatibleEndpoint): string {
   return `${normalizeBaseUrl(baseUrl)}${endpoint}`;
-}
-
-function readUsageUnits(body: unknown): number {
-  if (!body || typeof body !== "object") {
-    return 1;
-  }
-  const usage = (body as Record<string, unknown>).usage;
-  if (!usage || typeof usage !== "object") {
-    return 1;
-  }
-  const totalTokens = (usage as Record<string, unknown>).total_tokens;
-  if (typeof totalTokens === "number" && Number.isFinite(totalTokens) && totalTokens >= 0) {
-    return totalTokens;
-  }
-  return 1;
 }
 
 function extractHeaderMap(headers: Headers): Record<string, string> {
@@ -160,11 +146,14 @@ export async function forwardOpenAICompatibleRequest(
         ? ((body as Record<string, unknown>).model as string)
         : undefined;
 
+    const usage = response.ok ? extractTokenUsage(body) : undefined;
+
     return {
       statusCode: response.status,
       responseHeaders: extractHeaderMap(response.headers),
       body,
-      usageUnits: response.ok ? readUsageUnits(body) : 0,
+      usageUnits: response.ok ? usageUnitsFromDetails(usage) : 0,
+      usage,
       upstreamModel
     };
   } catch (error) {

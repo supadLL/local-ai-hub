@@ -3,6 +3,7 @@ import { createServer, type Server } from "node:http";
 import { codexModelCatalog } from "../model-catalog.js";
 import { createId, nowIso } from "./keys.js";
 import { createUnknownQuotaSnapshot } from "./upstream-status.js";
+import { createEmptyUpstreamUsage } from "./usage.js";
 import type { FileStore } from "../store/file-store.js";
 import type { UpstreamAccount } from "../types.js";
 
@@ -129,6 +130,7 @@ function createOAuthUpstream(tokens: OAuthTokenResponse): UpstreamAccount {
     discoveredModels: [...codexModelCatalog],
     requestCount: 0,
     usedQuota: 0,
+    usage: createEmptyUpstreamUsage(),
     lastUsedAt: null,
     quota: createUnknownQuotaSnapshot(now)
   };

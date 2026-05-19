@@ -290,7 +290,7 @@ describe("proxy failover behavior", () => {
 
     const streamBody = [
       'event: response.output_text.delta\ndata: {"delta":"hello from codex"}\n\n',
-      'event: response.completed\ndata: {"response":{"id":"resp_codex","usage":{"input_tokens":3,"output_tokens":2,"total_tokens":5}}}\n\n'
+      'event: response.completed\ndata: {"response":{"id":"resp_codex","usage":{"input_tokens":3,"output_tokens":2,"total_tokens":5,"input_tokens_details":{"cached_tokens":1},"output_tokens_details":{"reasoning_tokens":1}}}}\n\n'
     ].join("");
     const fetchMock = vi.fn<typeof fetch>().mockResolvedValueOnce(
       new Response(streamBody, {
@@ -348,6 +348,14 @@ describe("proxy failover behavior", () => {
     const state = await harness.store.readState();
     expect(state.clientKeys[0]?.usedQuota).toBe(5);
     expect(state.upstreams[0]?.requestCount).toBe(1);
+    expect(state.upstreams[0]?.usage).toMatchObject({
+      request_count: 1,
+      input_tokens: 3,
+      output_tokens: 2,
+      total_tokens: 5,
+      cached_tokens: 1,
+      reasoning_tokens: 1
+    });
     expect(state.upstreams[0]?.quota).toMatchObject({
       source: "response-headers",
       status: "available",
@@ -364,6 +372,111 @@ describe("proxy failover behavior", () => {
         usedPercent: 64,
         limitWindowSeconds: 3600
       }
+    });
+  });
+
+  it("records streaming Codex usage details instead of a one-unit fallback", async () => {
+    const harness = await createTestHarness({
+      upstreams: [
+        {
+          id: "upstream_oauth_stream_messages",
+          name: "OpenAI Login",
+          provider: "openai-oauth",
+          baseUrl: "https://chatgpt.com/backend-api",
+          apiKey: "oauth-access-token",
+          refreshToken: null,
+          tokenExpiresAt: null,
+          accountEmail: "free@example.com",
+          accountSubject: "user_123",
+          models: ["codex"],
+          enabled: true,
+          weight: 1,
+          headers: {},
+          note: "",
+          createdAt: "2026-05-18T00:00:00.000Z",
+          updatedAt: "2026-05-18T00:00:00.000Z",
+          discoveredModels: ["codex"]
+        }
+      ],
+      clientKeys: [
+        {
+          id: "ck_stream_messages",
+          name: "claude-code",
+          key: "lah_stream_messages_key",
+          allowedModels: ["gpt-5*"],
+          enabled: true,
+          quotaLimit: 1000,
+          usedQuota: 0,
+          requestsPerMinute: 60,
+          currentWindowStart: 0,
+          currentWindowCount: 0,
+          note: "",
+          createdAt: "2026-05-18T00:00:00.000Z",
+          updatedAt: "2026-05-18T00:00:00.000Z"
+        }
+      ]
+    });
+    cleanups.push(harness.cleanup);
+
+    const streamBody = [
+      'event: response.output_text.delta\ndata: {"delta":"streamed"}\n\n',
+      'event: response.completed\ndata: {"response":{"id":"resp_stream","usage":{"input_tokens":8,"output_tokens":5,"total_tokens":13,"input_tokens_details":{"cached_tokens":3},"output_tokens_details":{"reasoning_tokens":2}}}}\n\n'
+    ].join("");
+    const fetchMock = vi.fn<typeof fetch>().mockResolvedValueOnce(
+      new Response(streamBody, {
+        status: 200,
+        headers: {
+          "content-type": "text/event-stream"
+        }
+      })
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const response = await harness.request
+      .post("/v1/messages")
+      .set("x-api-key", "lah_stream_messages_key")
+      .send({
+        model: "gpt-5.5",
+        max_tokens: 128,
+        stream: true,
+        messages: [{ role: "user", content: "hello" }]
+      });
+
+    expect(response.status).toBe(200);
+    expect(response.text).toContain("message_delta");
+    expect(response.text).toContain("streamed");
+
+    const state = await harness.store.readState();
+    expect(state.clientKeys[0]?.usedQuota).toBe(13);
+    expect(state.upstreams[0]?.usedQuota).toBe(13);
+    expect(state.upstreams[0]?.requestCount).toBe(1);
+    expect(state.upstreams[0]?.usage).toMatchObject({
+      request_count: 1,
+      input_tokens: 8,
+      output_tokens: 5,
+      total_tokens: 13,
+      cached_tokens: 3,
+      reasoning_tokens: 2
+    });
+    expect(state.logs[0]?.metadata).toMatchObject({
+      usage: {
+        input_tokens: 8,
+        output_tokens: 5,
+        total_tokens: 13,
+        cached_tokens: 3,
+        reasoning_tokens: 2
+      }
+    });
+
+    const summary = await harness.request.get("/api/admin/usage-stats/summary");
+    expect(summary.status).toBe(200);
+    expect(summary.body).toMatchObject({
+      total_input_tokens: 8,
+      total_output_tokens: 5,
+      total_tokens: 13,
+      total_cached_tokens: 3,
+      total_reasoning_tokens: 2,
+      total_request_count: 1
     });
   });
 

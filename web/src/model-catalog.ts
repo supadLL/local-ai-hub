@@ -1,89 +1,27 @@
 export const gptModelCatalog = [
   "gpt-5.5",
-  "gpt-5.5-pro",
   "gpt-5.4",
-  "gpt-5.4-pro",
   "gpt-5.4-mini",
-  "gpt-5.4-nano",
-  "gpt-5.4-2026-03-05",
   "gpt-5.3-codex",
-  "gpt-5.3-chat-latest",
   "gpt-5.2",
-  "gpt-5.2-pro",
   "gpt-5.2-codex",
-  "gpt-5.2-chat-latest",
   "gpt-5.1",
   "gpt-5.1-codex",
-  "gpt-5.1-codex-max",
   "gpt-5.1-codex-mini",
-  "gpt-5.1-chat-latest",
   "gpt-5",
-  "gpt-5-pro",
   "gpt-5-mini",
-  "gpt-5-nano",
   "gpt-5-codex",
   "gpt-5-codex-mini",
-  "gpt-5-chat-latest",
   "codex-mini-latest",
-  "chat-latest",
-  "gpt-4.5-preview",
-  "gpt-4.5-preview-2025-02-27",
   "gpt-4.1",
-  "gpt-4.1-2025-04-14",
   "gpt-4.1-mini",
-  "gpt-4.1-mini-2025-04-14",
-  "gpt-4.1-nano",
-  "gpt-4.1-nano-2025-04-14",
   "gpt-4o",
-  "gpt-4o-2024-05-13",
-  "gpt-4o-2024-08-06",
-  "gpt-4o-2024-11-20",
-  "chatgpt-4o-latest",
   "gpt-4o-mini",
-  "gpt-4o-mini-2024-07-18",
-  "gpt-4o-search-preview",
-  "gpt-4o-search-preview-2025-03-11",
-  "gpt-4o-mini-search-preview",
-  "gpt-4o-mini-search-preview-2025-03-11",
   "gpt-4-turbo",
-  "gpt-4-turbo-2024-04-09",
-  "gpt-4-turbo-preview",
-  "gpt-4-0125-preview",
-  "gpt-4-1106-preview",
-  "gpt-4-1106-vision-preview",
-  "gpt-4-vision-preview",
   "gpt-4",
-  "gpt-4-0613",
-  "gpt-4-0314",
   "gpt-4-32k",
-  "gpt-4-32k-0613",
-  "gpt-4-32k-0314",
   "gpt-3.5-turbo",
-  "gpt-3.5-turbo-0125",
-  "gpt-3.5-turbo-1106",
-  "gpt-3.5-turbo-0613",
-  "gpt-3.5-turbo-16k",
-  "gpt-3.5-turbo-16k-0613",
-  "gpt-3.5-turbo-instruct",
-  "gpt-3.5-turbo-instruct-0914",
-  "davinci-002",
-  "babbage-002",
-  "text-davinci-003",
-  "text-davinci-002",
-  "text-curie-001",
-  "text-babbage-001",
-  "text-ada-001",
-  "davinci",
-  "curie",
-  "babbage",
-  "ada",
-  "gpt-image-2",
-  "gpt-image-1.5",
-  "gpt-image-1",
-  "gpt-image-1-mini",
-  "chatgpt-image-latest",
-  "gpt-oss-120b",
-  "gpt-oss-20b"
+  "gpt-3.5-turbo-16k"
 ] as const;
 
 export const preferredCCSwitchModels = [
@@ -102,54 +40,33 @@ export const preferredCCSwitchModels = [
 
 export const defaultGatewayModels = [
   "gpt-5.5",
-  "gpt-5.5-pro",
   "gpt-5.4",
-  "gpt-5.4-pro",
   "gpt-5.4-mini",
-  "gpt-5.4-nano",
   "gpt-5.3-codex",
-  "gpt-5.3-chat-latest",
   "gpt-5.2",
-  "gpt-5.2-pro",
   "gpt-5.2-codex",
-  "gpt-5.2-chat-latest",
   "gpt-5.1",
   "gpt-5.1-codex",
-  "gpt-5.1-codex-max",
   "gpt-5.1-codex-mini",
-  "gpt-5.1-chat-latest",
   "gpt-5",
-  "gpt-5-pro",
   "gpt-5-mini",
-  "gpt-5-nano",
   "gpt-5-codex",
   "gpt-5-codex-mini",
-  "gpt-5-chat-latest",
   "gpt-4.1",
   "gpt-4.1-mini",
-  "gpt-4.1-nano",
   "gpt-4o",
   "gpt-4o-mini",
   "gpt-4-turbo",
   "gpt-4",
-  "gpt-3.5-turbo",
-  "davinci-002",
-  "babbage-002"
+  "gpt-3.5-turbo"
 ];
 
 export const defaultGatewayModelText = defaultGatewayModels.join(", ");
-export const defaultLocalKeyModelText = [
-  ...defaultGatewayModels,
-  "gpt-5*",
-  "gpt-4*",
-  "gpt-3.5*",
-  "gpt-3*",
-  "*"
-].join(", ");
+export const defaultLocalKeyModelText = defaultGatewayModels.join(", ");
 export const defaultRequestModel = "gpt-5.5";
 
 export function choosePreferredModel(models: string[]): string {
-  const normalized = models.map((item) => item.trim()).filter(Boolean);
+  const normalized = buildModelOptions(models);
 
   for (const preferred of preferredCCSwitchModels) {
     if (normalized.some((model) => modelMatches(model, preferred))) {
@@ -166,7 +83,7 @@ export function buildModelOptions(extraModels: string[] = []): string[] {
   for (const model of extraModels) {
     addConcreteModelOption(values, model);
   }
-  return [...values].sort((left, right) => left.localeCompare(right));
+  return [...values].sort(sortModels);
 }
 
 function addConcreteModelOption(values: Set<string>, rawModel: string) {
@@ -184,7 +101,85 @@ function addConcreteModelOption(values: Set<string>, rawModel: string) {
     return;
   }
 
-  values.add(model);
+  const normalized = normalizeMainstreamModel(model);
+  if (normalized) {
+    values.add(normalized);
+  }
+}
+
+function normalizeMainstreamModel(model: string): string | null {
+  const lower = model.trim().toLowerCase();
+  if (!lower || lower === "*") {
+    return null;
+  }
+
+  const catalogMatch = gptModelCatalog.find((item) => item === lower);
+  if (catalogMatch) {
+    return catalogMatch;
+  }
+
+  const datedCodexMini = lower.match(/^(gpt-[345](?:\.\d+)?-codex-mini)-\d{4}-\d{2}-\d{2}$/);
+  if (datedCodexMini) {
+    return datedCodexMini[1];
+  }
+
+  const datedCodex = lower.match(/^(gpt-[345](?:\.\d+)?-codex)-\d{4}-\d{2}-\d{2}$/);
+  if (datedCodex) {
+    return datedCodex[1];
+  }
+
+  const datedMini = lower.match(/^(gpt-(?:3\.5|4(?:\.1|o)?|5(?:\.\d+)?)-mini)-\d{4}-\d{2}-\d{2}$/);
+  if (datedMini) {
+    return datedMini[1];
+  }
+
+  const datedNumeric = lower.match(/^(gpt-(?:3\.5|4(?:\.1|o)?|5(?:\.\d+)?))-\d{4}-\d{2}-\d{2}$/);
+  if (datedNumeric) {
+    return datedNumeric[1];
+  }
+
+  const datedLegacy = lower.match(/^(gpt-(?:3\.5-turbo(?:-16k)?|4(?:-32k|-turbo)?))-\d{4}(?:-\d{2}-\d{2})?$/);
+  if (datedLegacy) {
+    return datedLegacy[1];
+  }
+
+  const proNumeric = lower.match(/^(gpt-[345](?:\.\d+)?)-pro$/);
+  if (proNumeric) {
+    return proNumeric[1];
+  }
+
+  if (/^gpt-[345](?:\.\d+)?$/.test(lower)) {
+    return lower;
+  }
+  if (/^gpt-[345](?:\.\d+)?-(?:mini|codex|codex-mini|turbo|32k|16k)$/.test(lower)) {
+    return lower;
+  }
+  if (/^gpt-4o(?:-mini)?$/.test(lower)) {
+    return lower;
+  }
+  if (/^gpt-3\.5-turbo(?:-16k)?$/.test(lower)) {
+    return lower;
+  }
+  if (lower === "codex-mini-latest") {
+    return lower;
+  }
+
+  return null;
+}
+
+function sortModels(left: string, right: string): number {
+  const leftIndex = gptModelCatalog.findIndex((item) => item === left);
+  const rightIndex = gptModelCatalog.findIndex((item) => item === right);
+  if (leftIndex >= 0 && rightIndex >= 0) {
+    return leftIndex - rightIndex;
+  }
+  if (leftIndex >= 0) {
+    return -1;
+  }
+  if (rightIndex >= 0) {
+    return 1;
+  }
+  return left.localeCompare(right);
 }
 
 function modelMatches(pattern: string, candidate: string): boolean {

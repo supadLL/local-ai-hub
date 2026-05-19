@@ -13,6 +13,8 @@ import {
 } from "../services/openai-oauth.js";
 import { testOpenAICompatibleUpstream, UpstreamRequestError } from "../services/openai-proxy.js";
 import { createUnknownQuotaSnapshot, quotaSnapshotFromHeaders } from "../services/upstream-status.js";
+import { createEmptyUpstreamUsage, normalizeUpstreamUsage } from "../services/usage.js";
+import type { UsageGranularity, UsageHistoryRange, UsageStatsStore } from "../services/usage-stats.js";
 import type { FileStore } from "../store/file-store.js";
 import type { AuditLogEntry, ClientKey, UpstreamAccount } from "../types.js";
 
@@ -101,6 +103,7 @@ function runtimeDefaults(upstream: UpstreamAccount, fetchedAt?: string) {
     discoveredModels: upstream.discoveredModels ?? [],
     requestCount: upstream.requestCount ?? 0,
     usedQuota: upstream.usedQuota ?? 0,
+    usage: normalizeUpstreamUsage(upstream),
     lastUsedAt: upstream.lastUsedAt ?? null,
     quota: upstream.quota ?? createUnknownQuotaSnapshot(fetchedAt)
   };
@@ -161,6 +164,7 @@ function createUpstream(payload: UpstreamCreateInput): UpstreamAccount {
     discoveredModels: [],
     requestCount: 0,
     usedQuota: 0,
+    usage: createEmptyUpstreamUsage(),
     lastUsedAt: null,
     quota: createUnknownQuotaSnapshot(now)
   };
@@ -168,6 +172,20 @@ function createUpstream(payload: UpstreamCreateInput): UpstreamAccount {
 
 function getRequestId(res: express.Response): string {
   return typeof res.locals.requestId === "string" ? res.locals.requestId : createId("req");
+}
+
+function parseGranularity(value: unknown): UsageGranularity | null {
+  const raw = typeof value === "string" ? value : "hourly";
+  return raw === "raw" || raw === "five_min" || raw === "hourly" || raw === "daily" ? raw : null;
+}
+
+function parseHistoryRange(value: unknown): UsageHistoryRange | null {
+  const raw = typeof value === "string" ? value : "24";
+  if (raw === "all") {
+    return "all";
+  }
+  const parsed = Number(raw);
+  return Number.isInteger(parsed) && parsed >= 1 ? parsed : null;
 }
 
 async function probeUpstream(
@@ -338,7 +356,7 @@ async function probeUpstream(
   }
 }
 
-export function createAdminRouter(store: FileStore): express.Router {
+export function createAdminRouter(store: FileStore, usageStats: UsageStatsStore): express.Router {
   const router = express.Router();
 
   router.get("/state", async (_req, res, next) => {
@@ -350,6 +368,7 @@ export function createAdminRouter(store: FileStore): express.Router {
           port: appConfig.port,
           dataFilePath: appConfig.dataFilePath,
           logRetention: appConfig.logRetention,
+          usageHistoryRetentionDays: appConfig.usageHistoryRetentionDays,
           availableModels: [...gptModelCatalog]
         },
         counts: {
@@ -365,6 +384,39 @@ export function createAdminRouter(store: FileStore): express.Router {
     } catch (error) {
       next(error);
     }
+  });
+
+  router.get("/usage-stats/summary", async (_req, res, next) => {
+    try {
+      const state = await store.readState();
+      res.json(usageStats.getSummary(state));
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.get("/usage-stats/history", (req, res) => {
+    const granularity = parseGranularity(req.query.granularity);
+    if (!granularity) {
+      res.status(400).json({ error: "Invalid granularity. Must be raw, five_min, hourly, or daily." });
+      return;
+    }
+
+    const range = parseHistoryRange(req.query.hours);
+    if (range === null) {
+      res.status(400).json({ error: "hours must be a positive integer or all." });
+      return;
+    }
+    if (range === "all" && granularity === "raw") {
+      res.status(400).json({ error: "raw granularity cannot be used with hours=all." });
+      return;
+    }
+
+    res.json({
+      granularity,
+      hours: range,
+      data_points: usageStats.getHistory(range, granularity)
+    });
   });
 
   router.post("/upstreams/oauth/login-start", async (_req, res, next) => {

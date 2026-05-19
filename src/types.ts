@@ -57,11 +57,29 @@ export interface UpstreamAccount {
   discoveredModels?: string[];
   requestCount?: number;
   usedQuota?: number;
+  usage?: UpstreamUsage;
   lastUsedAt?: string | null;
   quota?: UpstreamQuotaSnapshot;
   consecutiveFailures?: number;
   cooldownUntil?: string | null;
   lastErrorCategory?: string | null;
+}
+
+export interface UpstreamUsage {
+  request_count: number;
+  input_tokens: number;
+  output_tokens: number;
+  total_tokens: number;
+  cached_tokens: number;
+  reasoning_tokens: number;
+  last_used: string | null;
+  window_request_count: number;
+  window_input_tokens: number;
+  window_output_tokens: number;
+  window_total_tokens: number;
+  window_cached_tokens: number;
+  window_reasoning_tokens: number;
+  window_counters_reset_at: string | null;
 }
 
 export interface ClientKey {
@@ -113,11 +131,20 @@ export interface ProxyPreparation {
   upstream: UpstreamAccount;
 }
 
+export interface TokenUsageDetails {
+  input_tokens: number;
+  output_tokens: number;
+  total_tokens?: number;
+  cached_tokens?: number;
+  reasoning_tokens?: number;
+}
+
 export interface ForwardedResult {
   statusCode: number;
   responseHeaders: Record<string, string>;
   body: unknown;
   usageUnits: number;
+  usage?: TokenUsageDetails;
   upstreamModel?: string;
   errorCategory?: string;
   retryable?: boolean;

@@ -66,8 +66,26 @@ export interface UpstreamAccount {
   discoveredModels?: string[];
   requestCount?: number;
   usedQuota?: number;
+  usage?: UpstreamUsage;
   lastUsedAt?: string | null;
   quota?: UpstreamQuotaSnapshot;
+}
+
+export interface UpstreamUsage {
+  request_count: number;
+  input_tokens: number;
+  output_tokens: number;
+  total_tokens: number;
+  cached_tokens: number;
+  reasoning_tokens: number;
+  last_used: string | null;
+  window_request_count: number;
+  window_input_tokens: number;
+  window_output_tokens: number;
+  window_total_tokens: number;
+  window_cached_tokens: number;
+  window_reasoning_tokens: number;
+  window_counters_reset_at: string | null;
 }
 
 export interface AuditLogEntry {
@@ -93,6 +111,7 @@ export interface AdminState {
     port: number;
     dataFilePath: string;
     logRetention: number;
+    usageHistoryRetentionDays: number | null;
     availableModels: string[];
   };
   counts: {
@@ -151,6 +170,36 @@ export interface UpstreamHealthCheckResponse {
     models?: string[];
     error?: string;
   }>;
+}
+
+export type UsageGranularity = "raw" | "five_min" | "hourly" | "daily";
+export type UsageHistoryRange = number | "all";
+
+export interface UsageSummary {
+  total_input_tokens: number;
+  total_output_tokens: number;
+  total_tokens: number;
+  total_cached_tokens: number;
+  total_reasoning_tokens: number;
+  total_request_count: number;
+  total_accounts: number;
+  active_accounts: number;
+}
+
+export interface UsageDataPoint {
+  timestamp: string;
+  input_tokens: number;
+  output_tokens: number;
+  total_tokens: number;
+  cached_tokens: number;
+  reasoning_tokens: number;
+  request_count: number;
+}
+
+export interface UsageHistoryResponse {
+  granularity: UsageGranularity;
+  hours: UsageHistoryRange;
+  data_points: UsageDataPoint[];
 }
 
 export interface OAuthLoginStartResponse {

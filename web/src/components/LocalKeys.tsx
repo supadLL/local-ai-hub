@@ -56,6 +56,7 @@ export function LocalKeys({ state, i18n, onCreate, onToggle, onDelete, onOpenCCS
   const [lastCreated, setLastCreated] = useState<{ id: string; name: string; models: string[] } | null>(null);
   const [ccSwitchDialog, setCCSwitchDialog] = useState<CCSwitchDialogState | null>(null);
   const keys = state?.clientKeys ?? [];
+  const modelOptions = buildModelOptions(collectKnownModels(state));
 
   function updateField(name: keyof typeof form, value: string) {
     setForm((current) => ({ ...current, [name]: value }));
@@ -92,14 +93,16 @@ export function LocalKeys({ state, i18n, onCreate, onToggle, onDelete, onOpenCCS
   }
 
   return (
-    <div className="grid grid-cols-[minmax(0,0.9fr)_minmax(520px,1.1fr)] gap-5 max-2xl:grid-cols-1">
-      <section className="panel">
+    <div className="grid grid-cols-[minmax(360px,0.82fr)_minmax(0,1.18fr)] gap-5 max-2xl:grid-cols-1 max-md:grid-cols-1">
+      <section className="panel overflow-visible">
         <div className="panel-head">
           <div>
             <h3 className="panel-title">{i18n.keys.createTitle}</h3>
             <p className="panel-copy">{i18n.keys.createCopy}</p>
           </div>
-          <KeyRound size={18} className="text-hub-500" />
+          <div className="grid size-10 place-items-center rounded-control bg-hub-50 text-hub-700">
+            <KeyRound size={18} />
+          </div>
         </div>
         <div className="grid gap-4 p-5">
           <div className="grid grid-cols-2 gap-4 max-md:grid-cols-1">
@@ -117,15 +120,13 @@ export function LocalKeys({ state, i18n, onCreate, onToggle, onDelete, onOpenCCS
                 onChange={(event) => updateField("requestsPerMinute", event.target.value)}
               />
             </label>
-            <label className="field">
-              <span className="field-label">{i18n.keys.allowedModels}</span>
-              <input
-                className="input"
-                list="local-key-model-catalog"
-                value={form.allowedModels}
-                onChange={(event) => updateField("allowedModels", event.target.value)}
-              />
-            </label>
+            <AllowedModelsPicker
+              label={i18n.keys.allowedModels}
+              value={form.allowedModels}
+              options={modelOptions}
+              i18n={i18n}
+              onChange={(value) => updateField("allowedModels", value)}
+            />
             <label className="field">
               <span className="field-label">{i18n.keys.quotaLimit}</span>
               <input
@@ -145,14 +146,8 @@ export function LocalKeys({ state, i18n, onCreate, onToggle, onDelete, onOpenCCS
             <Plus size={16} />
             {i18n.keys.createTitle}
           </button>
-          <datalist id="local-key-model-catalog">
-            {buildModelOptions(collectKnownModels(state)).map((model) => (
-              <option key={model} value={model} />
-            ))}
-          </datalist>
-
           {lastCreated ? (
-            <section className="rounded-[20px] border border-hub-100 bg-hub-50/70 p-4">
+            <section className="surface-tint p-4">
               <div className="flex items-start justify-between gap-3 max-md:grid">
                 <div>
                   <h4 className="m-0 text-sm font-black text-ink">{i18n.keys.ccSwitchTitle}</h4>
@@ -179,30 +174,30 @@ export function LocalKeys({ state, i18n, onCreate, onToggle, onDelete, onOpenCCS
         {keys.length === 0 ? (
           <EmptyState title={i18n.keys.emptyTitle} body={i18n.keys.emptyBody} />
         ) : (
-          <div className="overflow-auto">
-            <table className="w-full min-w-[760px] border-collapse">
+          <div className="overflow-auto p-4">
+            <table className="w-full min-w-[760px] border-separate border-spacing-y-2">
               <thead>
-                <tr className="bg-slate-50 text-left text-xs font-black text-muted">
-                  <th className="border-b border-slate-200 px-4 py-3">{i18n.keys.key}</th>
-                  <th className="border-b border-slate-200 px-4 py-3">{i18n.keys.scope}</th>
-                  <th className="border-b border-slate-200 px-4 py-3">{i18n.keys.usage}</th>
-                  <th className="border-b border-slate-200 px-4 py-3 text-right">{i18n.common.actions}</th>
+                <tr className="text-left text-xs font-black text-muted">
+                  <th className="px-4 py-2">{i18n.keys.key}</th>
+                  <th className="px-4 py-2">{i18n.keys.scope}</th>
+                  <th className="px-4 py-2">{i18n.keys.usage}</th>
+                  <th className="px-4 py-2 text-right">{i18n.common.actions}</th>
                 </tr>
               </thead>
               <tbody>
                 {keys.map((item) => (
-                  <tr key={item.id} className="align-top">
-                    <td className="border-b border-slate-200 px-4 py-3">
+                  <tr key={item.id} className="align-top transition hover:-translate-y-0.5">
+                    <td className="rounded-l-control border-y border-l border-line/80 bg-white/90 px-4 py-3 shadow-sm">
                       <div className="grid gap-1">
                         <strong className="text-sm font-black">{item.name}</strong>
                         <span className="font-mono text-xs text-muted">{item.key}</span>
                         <StatusChip enabled={item.enabled} i18n={i18n} />
                       </div>
                     </td>
-                    <td className="border-b border-slate-200 px-4 py-3">
+                    <td className="border-y border-line/80 bg-white/90 px-4 py-3 shadow-sm">
                       <ModelChips values={item.allowedModels} i18n={i18n} />
                     </td>
-                    <td className="border-b border-slate-200 px-4 py-3">
+                    <td className="border-y border-line/80 bg-white/90 px-4 py-3 shadow-sm">
                       <div className="grid gap-1">
                         <strong className="text-sm font-black">
                           {item.usedQuota} / {item.quotaLimit ?? i18n.keys.unlimited}
@@ -212,7 +207,7 @@ export function LocalKeys({ state, i18n, onCreate, onToggle, onDelete, onOpenCCS
                         </span>
                       </div>
                     </td>
-                    <td className="border-b border-slate-200 px-4 py-3">
+                    <td className="rounded-r-control border-y border-r border-line/80 bg-white/90 px-4 py-3 shadow-sm">
                       <div className="flex flex-wrap justify-end gap-2">
                         <CCSwitchButtons
                           compact
@@ -259,6 +254,138 @@ export function LocalKeys({ state, i18n, onCreate, onToggle, onDelete, onOpenCCS
           onFeedback={onFeedback}
         />
       ) : null}
+    </div>
+  );
+}
+
+function AllowedModelsPicker({
+  label,
+  value,
+  options,
+  i18n,
+  onChange
+}: {
+  label: string;
+  value: string;
+  options: string[];
+  i18n: Messages;
+  onChange: (value: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const selected = parseModelList(value);
+  const normalizedQuery = query.trim().toLowerCase();
+  const visibleOptions = (normalizedQuery
+    ? options.filter((model) => model.toLowerCase().includes(normalizedQuery))
+    : options
+  ).filter((model) => model !== "*");
+
+  function closeIfFocusLeft(event: FocusEvent<HTMLDivElement>) {
+    const nextTarget = event.relatedTarget;
+    if (!nextTarget || !event.currentTarget.contains(nextTarget as Node)) {
+      setOpen(false);
+      setQuery("");
+    }
+  }
+
+  function commit(nextModels: string[]) {
+    onChange(dedupeModels(nextModels).join(", "));
+  }
+
+  function toggleModel(model: string) {
+    if (selected.includes(model)) {
+      commit(selected.filter((item) => item !== model));
+      return;
+    }
+    commit([...selected, model]);
+  }
+
+  function clearModels() {
+    commit([]);
+  }
+
+  return (
+    <div className="field" onBlur={closeIfFocusLeft}>
+      <div className="flex items-center justify-between gap-3">
+        <span className="field-label">{label}</span>
+        <span className="text-[11px] font-extrabold text-muted">
+          {selected.length} {i18n.common.models}
+        </span>
+      </div>
+      <div className="relative">
+        <button
+          className="input flex min-h-[44px] items-center justify-between gap-3 text-left"
+          type="button"
+          onClick={() => setOpen((current) => !current)}
+        >
+          <span className="flex min-w-0 flex-1 flex-wrap gap-1.5">
+            {selected.length > 0 ? (
+              selected.slice(0, 4).map((model) => (
+                <span key={model} className="rounded-full bg-hub-50 px-2 py-0.5 text-xs font-black text-hub-700">
+                  {model}
+                </span>
+              ))
+            ) : (
+              <span className="truncate text-muted">{i18n.common.noModels}</span>
+            )}
+            {selected.length > 4 ? (
+              <span className="rounded-full bg-mist px-2 py-0.5 text-xs font-black text-muted">+{selected.length - 4}</span>
+            ) : null}
+          </span>
+          <ChevronDown size={16} className={["shrink-0 text-muted transition", open ? "rotate-180" : ""].join(" ")} />
+        </button>
+
+        {open ? (
+          <div className="absolute inset-x-0 top-[calc(100%+8px)] z-30 overflow-hidden rounded-control border border-line bg-white shadow-[0_18px_50px_rgba(15,23,42,0.14)]">
+            <div className="flex items-center gap-2 border-b border-line/80 bg-mist/60 px-3 py-2">
+              <Search size={14} className="text-muted" />
+              <input
+                className="min-w-0 flex-1 bg-transparent text-sm font-semibold text-ink outline-none placeholder:text-muted"
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder={i18n.keys.ccModelSearchPlaceholder}
+                autoFocus
+                spellCheck={false}
+              />
+              {selected.length > 0 ? (
+                <button
+                  className="rounded-full px-2 py-1 text-[11px] font-black text-muted transition hover:bg-white hover:text-ink"
+                  type="button"
+                  onMouseDown={(event) => event.preventDefault()}
+                  onClick={clearModels}
+                >
+                  {i18n.common.clear}
+                </button>
+              ) : null}
+            </div>
+
+            <div className="max-h-[220px] overflow-y-auto p-1.5">
+              {visibleOptions.length > 0 ? (
+                visibleOptions.map((model) => {
+                  const checked = selected.includes(model);
+                  return (
+                    <button
+                      key={model}
+                      className={[
+                        "flex w-full items-center justify-between gap-3 rounded-control px-3 py-2.5 text-left text-sm font-black transition",
+                        checked ? "bg-hub-50 text-hub-700" : "text-ink hover:bg-mist"
+                      ].join(" ")}
+                      type="button"
+                      onMouseDown={(event) => event.preventDefault()}
+                      onClick={() => toggleModel(model)}
+                    >
+                      <span className="truncate">{model}</span>
+                      {checked ? <Check size={15} className="shrink-0" /> : null}
+                    </button>
+                  );
+                })
+              ) : (
+                <div className="px-3 py-4 text-center text-xs font-extrabold text-muted">{i18n.common.noModels}</div>
+              )}
+            </div>
+          </div>
+        ) : null}
+      </div>
     </div>
   );
 }
@@ -318,16 +445,15 @@ function CCSwitchImportDialog({
   }
 
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/35 px-4 py-6 backdrop-blur-sm">
-      <section className="relative w-full max-w-[520px] overflow-hidden rounded-[26px] border border-white/70 bg-white shadow-[0_24px_80px_rgba(15,23,42,0.24)]">
-        <div className="absolute inset-x-0 top-0 h-24 bg-[radial-gradient(circle_at_20%_0%,rgba(49,151,124,0.18),transparent_42%),radial-gradient(circle_at_90%_10%,rgba(215,166,74,0.18),transparent_38%)]" />
-        <div className="relative flex items-start justify-between gap-4 border-b border-slate-100 px-5 py-4">
+    <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/30 px-4 py-6 backdrop-blur-sm">
+      <section className="relative w-full max-w-[520px] overflow-hidden rounded-control border border-line/80 bg-white shadow-[0_24px_80px_rgba(15,23,42,0.18)]">
+        <div className="relative flex items-start justify-between gap-4 border-b border-line/80 bg-mist/70 px-5 py-4">
           <div>
             <h3 className="m-0 text-lg font-black text-ink">{i18n.keys.ccDialogTitle}</h3>
             <p className="m-0 mt-1 text-xs leading-5 text-muted">{i18n.keys.ccDialogHint}</p>
           </div>
           <button
-            className="grid size-9 shrink-0 place-items-center rounded-full border border-slate-200 bg-white text-muted transition hover:border-slate-300 hover:text-ink"
+            className="grid size-9 shrink-0 place-items-center rounded-control border border-line bg-white text-muted transition hover:border-hub-100 hover:text-ink"
             type="button"
             onClick={onClose}
             aria-label={i18n.common.cancel}
@@ -347,7 +473,7 @@ function CCSwitchImportDialog({
                     "rounded-control border px-3 py-2 text-sm font-extrabold transition",
                     app === item.id
                       ? "border-hub-500 bg-hub-50 text-hub-700 shadow-sm"
-                      : "border-slate-200 bg-white text-ink hover:border-hub-200 hover:bg-slate-50"
+                      : "border-line bg-white text-ink hover:border-hub-100 hover:bg-hub-50"
                   ].join(" ")}
                   type="button"
                   onClick={() => updateApp(item.id)}
@@ -377,7 +503,7 @@ function CCSwitchImportDialog({
           ))}
         </div>
 
-        <div className="flex items-center justify-end gap-2 border-t border-slate-100 bg-slate-50/80 px-5 py-4">
+        <div className="flex items-center justify-end gap-2 border-t border-line/80 bg-mist/50 px-5 py-4">
           <button className="button button-secondary" type="button" onClick={onClose}>
             {i18n.common.cancel}
           </button>
@@ -482,8 +608,8 @@ function ModelPicker({
         </button>
 
         {open ? (
-          <div className="absolute inset-x-0 top-[calc(100%+8px)] z-20 overflow-hidden rounded-[18px] border border-slate-200 bg-white shadow-[0_18px_50px_rgba(15,23,42,0.18)]">
-            <div className="flex items-center gap-2 border-b border-slate-100 bg-slate-50 px-3 py-2">
+          <div className="absolute inset-x-0 top-[calc(100%+8px)] z-20 overflow-hidden rounded-control border border-line bg-white shadow-[0_18px_50px_rgba(15,23,42,0.14)]">
+            <div className="flex items-center gap-2 border-b border-line/80 bg-mist/60 px-3 py-2">
               <Search size={14} className="text-muted" />
               <input
                 className="min-w-0 flex-1 bg-transparent text-sm font-semibold text-ink outline-none placeholder:text-muted"
@@ -510,8 +636,8 @@ function ModelPicker({
                   <button
                     key={model}
                     className={[
-                      "flex w-full items-center justify-between gap-3 rounded-[14px] px-3 py-2.5 text-left text-sm font-extrabold transition",
-                      model === value ? "bg-hub-50 text-hub-700" : "text-ink hover:bg-slate-50"
+                    "flex w-full items-center justify-between gap-3 rounded-control px-3 py-2.5 text-left text-sm font-black transition",
+                      model === value ? "bg-hub-50 text-hub-700" : "text-ink hover:bg-mist"
                     ].join(" ")}
                     type="button"
                     onMouseDown={(event) => event.preventDefault()}
@@ -565,4 +691,28 @@ function collectKnownModels(state: AdminState | null): string[] {
     values.push(...(upstream.discoveredModels?.length ? upstream.discoveredModels : upstream.models));
   }
   return values;
+}
+
+function parseModelList(value: string): string[] {
+  return dedupeModels(
+    value
+      .split(",")
+      .map((item) => item.trim())
+      .filter(Boolean)
+  );
+}
+
+function dedupeModels(values: string[]): string[] {
+  const seen = new Set<string>();
+  const result: string[] = [];
+  for (const value of values) {
+    const normalized = value.trim();
+    const key = normalized.toLowerCase();
+    if (!normalized || seen.has(key)) {
+      continue;
+    }
+    seen.add(key);
+    result.push(normalized);
+  }
+  return result;
 }

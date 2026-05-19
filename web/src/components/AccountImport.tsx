@@ -1,16 +1,18 @@
 import {
   Braces,
   CheckCircle2,
+  ExternalLink,
   Eye,
   EyeOff,
-  ExternalLink,
   FlaskConical,
   KeyRound,
   LogIn,
   LockKeyhole,
-  Upload
+  Upload,
+  X,
+  type LucideIcon
 } from "lucide-react";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import type { Messages } from "../i18n";
 import { buildModelOptions, defaultGatewayModels, defaultGatewayModelText } from "../model-catalog";
 import type {
@@ -51,6 +53,7 @@ const defaultForm = {
 
 type CredentialForm = typeof defaultForm;
 type BusyState = "test" | "save" | "batch-test" | "batch-import" | null;
+type ImportDialog = "oauth" | "credential" | "batch" | null;
 
 interface AccountImportProps {
   state: AdminState | null;
@@ -89,6 +92,7 @@ export function AccountImport({
   const [busy, setBusy] = useState<BusyState>(null);
   const [oauthBusy, setOauthBusy] = useState<"login" | "relay" | null>(null);
   const [callbackUrl, setCallbackUrl] = useState("");
+  const [dialog, setDialog] = useState<ImportDialog>(null);
   const modelOptions = buildModelOptions(collectKnownModels(state));
 
   function updateField<K extends keyof CredentialForm>(name: K, value: CredentialForm[K]) {
@@ -141,6 +145,7 @@ export function AccountImport({
       const payload = buildPayload();
       await onCreate(payload);
       setForm((current) => ({ ...current, apiKey: "" }));
+      setDialog(null);
     } finally {
       setBusy(null);
     }
@@ -161,6 +166,7 @@ export function AccountImport({
     setBusy("batch-import");
     try {
       await onImport(parseBatch());
+      setDialog(null);
     } finally {
       setBusy(null);
     }
@@ -180,31 +186,76 @@ export function AccountImport({
     try {
       await onOAuthRelay(callbackUrl);
       setCallbackUrl("");
+      setDialog(null);
     } finally {
       setOauthBusy(null);
     }
   }
 
   return (
-    <div className="grid grid-cols-[minmax(0,1fr)_minmax(390px,0.78fr)] gap-5 max-xl:grid-cols-1">
-      <div className="grid gap-5">
-        <section className="panel overflow-hidden">
-          <div className="relative overflow-hidden border-b border-slate-200 bg-[#101816] px-5 py-5 text-white">
-            <div className="absolute -right-10 top-0 h-32 w-32 rounded-full bg-hub-500/25 blur-2xl" />
-            <div className="relative flex items-start justify-between gap-4">
-              <div>
-                <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-extrabold">
-                  <LogIn size={14} />
-                  {i18n.importPage.openaiLoginTitle}
-                </div>
-                <h3 className="m-0 text-lg font-black">{i18n.importPage.openaiLoginTitle}</h3>
-                <p className="m-0 mt-1 max-w-xl text-sm text-white/75">{i18n.importPage.openaiLoginCopy}</p>
-              </div>
-              <ExternalLink className="shrink-0 text-white/70" size={24} />
-            </div>
-          </div>
+    <>
+      <div className="grid grid-cols-[minmax(0,1fr)_330px] gap-5 max-xl:grid-cols-1">
+        <main className="grid gap-5">
+          <AccountStatusPanel
+            state={state}
+            i18n={i18n}
+            onRefresh={onRefreshState}
+            onHealthCheck={onHealthCheck}
+            onTestSaved={onTestSaved}
+            onDeleteSaved={onDeleteSaved}
+            onRefreshQuota={onRefreshQuota}
+            onFeedback={onFeedback}
+          />
+        </main>
 
-          <div className="grid gap-4 p-5">
+        <aside className="grid content-start gap-5">
+          <section className="panel overflow-hidden">
+            <div className="panel-head">
+              <div>
+                <h3 className="panel-title">{i18n.importPage.statusTitle}</h3>
+                <p className="panel-copy">{i18n.importPage.statusCopy}</p>
+              </div>
+              <div className="grid size-10 place-items-center rounded-control bg-hub-50 text-hub-700">
+                <CheckCircle2 size={20} />
+              </div>
+            </div>
+            <div className="grid gap-3 p-5">
+              <ImportButton
+                icon={LogIn}
+                title={i18n.importPage.openaiLoginTitle}
+                description={i18n.importPage.openaiLoginCopy}
+                onClick={() => setDialog("oauth")}
+              />
+              <ImportButton
+                icon={KeyRound}
+                title={i18n.importPage.credentialTitle}
+                description={i18n.importPage.credentialCopy}
+                onClick={() => setDialog("credential")}
+              />
+              <ImportButton
+                icon={Braces}
+                title={i18n.importPage.jsonTitle}
+                description={i18n.importPage.jsonCopy}
+                onClick={() => setDialog("batch")}
+              />
+            </div>
+          </section>
+
+          <section className="surface-tint p-5">
+            <div className="mb-5 grid gap-3">
+              <StatusNumber label={i18n.importPage.importedCount} value={state?.counts.upstreams ?? 0} />
+              <StatusNumber label={i18n.importPage.enabledCount} value={state?.counts.enabledUpstreams ?? 0} />
+            </div>
+            <h3 className="m-0 text-sm font-black text-ink">{i18n.importPage.loginNoteTitle}</h3>
+            <p className="m-0 mt-2 text-sm leading-6 text-muted">{i18n.importPage.loginNoteCopy}</p>
+          </section>
+        </aside>
+      </div>
+
+      {dialog === "oauth" ? (
+        <ImportModal title={i18n.importPage.openaiLoginTitle} icon={LogIn} onClose={() => setDialog(null)}>
+          <div className="grid gap-4">
+            <p className="m-0 text-sm leading-6 text-muted">{i18n.importPage.openaiLoginCopy}</p>
             <button
               className="button w-fit disabled:cursor-not-allowed disabled:opacity-60"
               type="button"
@@ -215,7 +266,7 @@ export function AccountImport({
               {oauthBusy === "login" ? i18n.importPage.openaiLoginStarting : i18n.importPage.openaiLoginButton}
             </button>
 
-            <div className="rounded-control border border-slate-200 bg-slate-50 p-3">
+            <div className="surface-tint p-3">
               <h4 className="m-0 text-xs font-black text-ink">{i18n.importPage.openaiLoginRelayTitle}</h4>
               <p className="m-0 mt-1 text-xs leading-5 text-muted">{i18n.importPage.openaiLoginRelayCopy}</p>
               <div className="mt-3 flex gap-2 max-md:grid">
@@ -237,26 +288,13 @@ export function AccountImport({
               </div>
             </div>
           </div>
-        </section>
+        </ImportModal>
+      ) : null}
 
-        <section className="panel overflow-hidden">
-          <div className="relative overflow-hidden border-b border-slate-200 bg-gradient-to-br from-hub-900 via-hub-600 to-[#d7a64a] px-5 py-5 text-white">
-            <div className="absolute -right-8 -top-12 h-36 w-36 rounded-full bg-white/15 blur-2xl" />
-            <div className="relative flex items-start justify-between gap-4">
-              <div>
-                <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/15 px-3 py-1 text-xs font-extrabold">
-                  <LockKeyhole size={14} />
-                  {i18n.importPage.credentialBadge}
-                </div>
-                <h3 className="m-0 text-lg font-black">{i18n.importPage.credentialTitle}</h3>
-                <p className="m-0 mt-1 max-w-xl text-sm text-white/80">{i18n.importPage.credentialCopy}</p>
-              </div>
-              <KeyRound className="shrink-0 text-white/80" size={26} />
-            </div>
-          </div>
-
-          <div className="grid gap-4 p-5">
-            <div className="rounded-control border border-hub-100 bg-hub-50/80 p-3 text-xs leading-5 text-hub-900">
+      {dialog === "credential" ? (
+        <ImportModal title={i18n.importPage.credentialTitle} icon={LockKeyhole} onClose={() => setDialog(null)} wide>
+          <div className="grid gap-4">
+            <div className="surface-tint p-3 text-xs leading-5 text-hub-900">
               <strong className="mb-1 block">{i18n.importPage.selfUseHint}</strong>
               <span className="text-muted">{i18n.importPage.visibilityHint}</span>
             </div>
@@ -288,7 +326,7 @@ export function AccountImport({
                     spellCheck={false}
                   />
                   <button
-                    className="absolute right-2 top-1/2 grid h-8 w-8 -translate-y-1/2 place-items-center rounded-md text-muted transition hover:bg-slate-100 hover:text-ink"
+                    className="absolute right-2 top-1/2 grid h-8 w-8 -translate-y-1/2 place-items-center rounded-control text-muted transition hover:bg-hub-50 hover:text-hub-700"
                     type="button"
                     onClick={() => setShowSecret((value) => !value)}
                     aria-label={showSecret ? i18n.importPage.hideSecret : i18n.importPage.showSecret}
@@ -339,9 +377,9 @@ export function AccountImport({
               ))}
             </datalist>
 
-            <label className="flex items-center gap-2 text-sm font-extrabold text-ink">
+            <label className="flex items-center gap-2 text-sm font-black text-ink">
               <input
-                className="h-4 w-4 accent-hub-500"
+                className="h-4 w-4 accent-hub-600"
                 type="checkbox"
                 checked={form.enabled}
                 onChange={(event) => updateField("enabled", event.target.checked)}
@@ -370,19 +408,15 @@ export function AccountImport({
               </button>
             </div>
           </div>
-        </section>
+        </ImportModal>
+      ) : null}
 
-        <section className="panel">
-          <div className="panel-head">
-            <div>
-              <h3 className="panel-title">{i18n.importPage.jsonTitle}</h3>
-              <p className="panel-copy">{i18n.importPage.jsonCopy}</p>
-            </div>
-            <Braces className="text-hub-500" size={18} />
-          </div>
-          <div className="grid gap-3 p-5">
+      {dialog === "batch" ? (
+        <ImportModal title={i18n.importPage.jsonTitle} icon={Braces} onClose={() => setDialog(null)} wide>
+          <div className="grid gap-3">
+            <p className="m-0 text-sm leading-6 text-muted">{i18n.importPage.jsonCopy}</p>
             <textarea
-              className="input min-h-[260px] font-mono text-xs leading-6"
+              className="input min-h-[320px] bg-[#fbfffd] font-mono text-xs leading-6"
               value={batchJson}
               onChange={(event) => setBatchJson(event.target.value)}
               spellCheck={false}
@@ -408,48 +442,89 @@ export function AccountImport({
               </button>
             </div>
           </div>
-        </section>
-      </div>
+        </ImportModal>
+      ) : null}
+    </>
+  );
+}
 
-      <aside className="grid content-start gap-5">
-        <AccountStatusPanel
-          state={state}
-          i18n={i18n}
-          onRefresh={onRefreshState}
-          onHealthCheck={onHealthCheck}
-          onTestSaved={onTestSaved}
-          onDeleteSaved={onDeleteSaved}
-          onRefreshQuota={onRefreshQuota}
-          onFeedback={onFeedback}
-        />
+function ImportButton({
+  icon: Icon,
+  title,
+  description,
+  onClick
+}: {
+  icon: LucideIcon;
+  title: string;
+  description: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      className="group grid w-full grid-cols-[40px_minmax(0,1fr)_auto] items-center gap-3 rounded-control border border-line/80 bg-white/90 p-3 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-hub-100 hover:bg-hub-50 hover:shadow-panel"
+      type="button"
+      onClick={onClick}
+    >
+      <span className="grid size-10 place-items-center rounded-control bg-hub-50 text-hub-700 transition group-hover:bg-white">
+        <Icon size={18} />
+      </span>
+      <span className="min-w-0">
+        <strong className="block text-sm font-black text-ink">{title}</strong>
+        <span className="mt-1 block text-xs leading-5 text-muted">{description}</span>
+      </span>
+      <ExternalLink size={16} className="text-muted transition group-hover:text-hub-700" />
+    </button>
+  );
+}
 
-        <section className="panel p-5">
-          <div className="mb-4 flex items-center gap-3">
-            <div className="grid size-10 place-items-center rounded-control bg-hub-50 text-hub-600">
-              <CheckCircle2 size={20} />
+function ImportModal({
+  title,
+  icon: Icon,
+  children,
+  onClose,
+  wide = false
+}: {
+  title: string;
+  icon: LucideIcon;
+  children: ReactNode;
+  onClose: () => void;
+  wide?: boolean;
+}) {
+  return (
+    <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/30 px-4 py-6 backdrop-blur-sm">
+      <section
+        className={[
+          "max-h-[86vh] w-full overflow-hidden rounded-control border border-line/80 bg-white shadow-[0_24px_80px_rgba(15,23,42,0.18)]",
+          wide ? "max-w-[760px]" : "max-w-[560px]"
+        ].join(" ")}
+      >
+        <div className="flex items-start justify-between gap-4 border-b border-line/80 bg-mist/70 px-5 py-4">
+          <div className="flex items-center gap-3">
+            <div className="grid size-10 place-items-center rounded-control bg-white text-hub-700 shadow-sm">
+              <Icon size={18} />
             </div>
-            <div>
-              <h3 className="m-0 text-sm font-black text-ink">{i18n.importPage.statusTitle}</h3>
-              <p className="m-0 mt-1 text-xs text-muted">{i18n.importPage.statusCopy}</p>
-            </div>
+            <h3 className="m-0 font-display text-lg font-black text-ink">{title}</h3>
           </div>
-          <div className="mb-5 grid gap-3">
-            <StatusNumber label={i18n.importPage.importedCount} value={state?.counts.upstreams ?? 0} />
-            <StatusNumber label={i18n.importPage.enabledCount} value={state?.counts.enabledUpstreams ?? 0} />
-          </div>
-          <h3 className="m-0 text-sm font-black text-ink">{i18n.importPage.loginNoteTitle}</h3>
-          <p className="m-0 mt-2 text-sm leading-6 text-muted">{i18n.importPage.loginNoteCopy}</p>
-        </section>
-      </aside>
+          <button
+            className="grid size-9 shrink-0 place-items-center rounded-control border border-line bg-white text-muted transition hover:border-hub-100 hover:text-ink"
+            type="button"
+            onClick={onClose}
+            aria-label="Close"
+          >
+            <X size={16} />
+          </button>
+        </div>
+        <div className="max-h-[calc(86vh-74px)] overflow-y-auto p-5">{children}</div>
+      </section>
     </div>
   );
 }
 
 function StatusNumber({ label, value }: { label: string; value: number }) {
   return (
-    <div className="flex items-center justify-between gap-3 rounded-control border border-slate-200 bg-slate-50 px-3 py-2">
-      <span className="text-xs font-extrabold text-muted">{label}</span>
-      <strong className="text-lg font-black text-ink">{value}</strong>
+    <div className="flex items-center justify-between gap-3 rounded-control border border-line/80 bg-white/75 px-3 py-2">
+      <span className="text-xs font-black text-muted">{label}</span>
+      <strong className="font-display text-lg font-black text-ink">{value}</strong>
     </div>
   );
 }

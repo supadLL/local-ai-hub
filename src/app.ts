@@ -5,12 +5,14 @@ import { appConfig } from "./config.js";
 import { createAdminRouter } from "./routes/admin.js";
 import { createProxyRouter } from "./routes/proxy.js";
 import { createId } from "./services/keys.js";
+import { createUsageStatsStore, type UsageStatsStore } from "./services/usage-stats.js";
 import { UpstreamSelector } from "./services/upstreams.js";
 import { FileStore } from "./store/file-store.js";
 
 export interface CreateAppOptions {
   store?: FileStore;
   selector?: UpstreamSelector;
+  usageStats?: UsageStatsStore;
   staticDir?: string;
   enableRequestLogging?: boolean;
 }
@@ -42,6 +44,7 @@ function logRequest(payload: RequestLogPayload): void {
 export function createApp(options: CreateAppOptions = {}) {
   const store = options.store ?? new FileStore(appConfig.dataFilePath);
   const selector = options.selector ?? new UpstreamSelector();
+  const usageStats = options.usageStats ?? createUsageStatsStore(store.dataDir());
   const staticDir = options.staticDir ?? path.resolve(process.cwd(), "public");
   const enableRequestLogging = options.enableRequestLogging ?? true;
 
@@ -94,8 +97,8 @@ export function createApp(options: CreateAppOptions = {}) {
     }
   });
 
-  app.use("/api/admin", createAdminRouter(store));
-  app.use(createProxyRouter(store, selector));
+  app.use("/api/admin", createAdminRouter(store, usageStats));
+  app.use(createProxyRouter(store, selector, usageStats));
 
   app.use((error: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
     const requestId =
@@ -137,6 +140,7 @@ export function createApp(options: CreateAppOptions = {}) {
   return {
     app,
     store,
-    selector
+    selector,
+    usageStats
   };
 }

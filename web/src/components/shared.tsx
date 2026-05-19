@@ -27,10 +27,10 @@ export function ModelChips({ values, i18n }: { values: string[]; i18n: Messages 
 
 export function EmptyState({ title, body }: { title: string; body: string }) {
   return (
-    <div className="grid min-h-44 place-items-center p-6 text-center">
+    <div className="grid min-h-44 place-items-center rounded-control border border-dashed border-line/80 bg-mist/40 p-6 text-center">
       <div>
-        <strong className="block text-sm font-black text-ink">{title}</strong>
-        <span className="mt-2 block text-sm text-muted">{body}</span>
+        <strong className="block font-display text-sm font-black text-ink">{title}</strong>
+        <span className="mt-2 block text-sm leading-6 text-muted">{body}</span>
       </div>
     </div>
   );
@@ -54,16 +54,19 @@ export function LogList({
   return (
     <div className="grid">
       {visible.map((item) => (
-        <article key={item.id} className="grid gap-2 border-b border-slate-200 py-3 last:border-b-0">
+        <article
+          key={item.id}
+          className="grid gap-2 border-b border-line/80 py-3 last:border-b-0"
+        >
           <div className="flex items-start justify-between gap-3">
-            <strong className="text-sm font-extrabold text-ink">{item.message}</strong>
+            <strong className="text-sm font-black leading-5 text-ink">{item.message}</strong>
             {item.statusCode ? (
               <span className={`chip ${item.statusCode < 400 ? "chip-success" : "chip-warn"}`}>
                 {item.statusCode}
               </span>
             ) : null}
           </div>
-          <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted">
+          <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs leading-5 text-muted">
             <span>{new Date(item.timestamp).toLocaleString()}</span>
             {item.model ? <span>{i18n.logs.model} {item.model}</span> : null}
             {item.clientKeyName ? <span>{i18n.logs.client} {item.clientKeyName}</span> : null}

@@ -1,263 +1,451 @@
-import { Activity, BarChart3, Gauge, KeyRound, RadioTower, Sigma, UsersRound, Zap } from "lucide-react";
-import { useMemo, useState } from "react";
+import {
+  Activity,
+  Boxes,
+  CircleGauge,
+  Database,
+  Gauge,
+  Hash,
+  Layers3,
+  RefreshCw,
+  Sigma,
+  WalletCards,
+  Zap,
+  type LucideIcon
+} from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { api } from "../api";
 import type { Messages } from "../i18n";
-import type { AdminState, AuditLogEntry } from "../types";
-
-type RangeId = "5m" | "1h" | "1d" | "6h" | "24h" | "3d" | "7d" | "30d" | "all";
+import type {
+  AdminState,
+  UsageDataPoint,
+  UsageGranularity,
+  UsageHistoryRange,
+  UsageSummary
+} from "../types";
 
 interface RangeOption {
-  id: RangeId;
+  id: UsageHistoryRange;
   label: string;
-  ms: number | null;
 }
 
-interface SeriesPoint {
-  timestamp: number;
-  units: number;
-  requests: number;
-}
+const ranges: RangeOption[] = [
+  { id: 1, label: "1h" },
+  { id: 6, label: "6h" },
+  { id: 24, label: "24h" },
+  { id: 72, label: "3d" },
+  { id: 168, label: "7d" },
+  { id: 720, label: "30d" },
+  { id: "all", label: "All" }
+];
+
+const granularities: Array<{ id: UsageGranularity; label: string }> = [
+  { id: "five_min", label: "5 min" },
+  { id: "hourly", label: "Hourly" },
+  { id: "daily", label: "Daily" }
+];
+
+const emptySummary: UsageSummary = {
+  total_input_tokens: 0,
+  total_output_tokens: 0,
+  total_tokens: 0,
+  total_cached_tokens: 0,
+  total_reasoning_tokens: 0,
+  total_request_count: 0,
+  total_accounts: 0,
+  active_accounts: 0
+};
 
 export function UsageStats({ state, i18n }: { state: AdminState | null; i18n: Messages }) {
-  const [rangeId, setRangeId] = useState<RangeId>("24h");
-  const ranges = useMemo(() => rangeOptions(i18n), [i18n]);
-  const activeRange = ranges.find((range) => range.id === rangeId) ?? ranges[4];
-  const upstreams = state?.upstreams ?? [];
-  const clientKeys = state?.clientKeys ?? [];
-  const logs = state?.logs ?? [];
+  const [summary, setSummary] = useState<UsageSummary>(emptySummary);
+  const [points, setPoints] = useState<UsageDataPoint[]>([]);
+  const [granularity, setGranularity] = useState<UsageGranularity>("hourly");
+  const [range, setRange] = useState<UsageHistoryRange>(24);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const copy = usageCopy(i18n);
 
-  const totalUnits = upstreams.reduce((sum, account) => sum + (account.usedQuota ?? 0), 0);
-  const totalRequests = upstreams.reduce((sum, account) => sum + (account.requestCount ?? 0), 0);
-  const activeAccounts = upstreams.filter((account) => account.enabled).length;
-  const activeKeys = clientKeys.filter((key) => key.enabled).length;
-  const quotaPercents = upstreams
-    .map((account) => account.quota?.rateLimit?.usedPercent ?? account.quota?.usedPercent)
-    .filter((value): value is number => typeof value === "number" && Number.isFinite(value));
-  const quotaAverage = quotaPercents.length > 0 ? quotaPercents.reduce((sum, value) => sum + value, 0) / quotaPercents.length : null;
-  const limitedAccounts = upstreams.filter((account) => account.quota?.status === "limited" || account.quota?.limitReached).length;
-  const series = useMemo(() => buildSeries(logs, activeRange.ms), [logs, activeRange.ms]);
-  const recentUnits = series.at(-1)?.units ?? 0;
-  const averageUnits = totalRequests > 0 ? totalUnits / totalRequests : 0;
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
+    Promise.all([api.usageSummary(), api.usageHistory(granularity, range)])
+      .then(([nextSummary, history]) => {
+        if (cancelled) {
+          return;
+        }
+        setSummary(nextSummary);
+        setPoints(history.data_points);
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          setError(err instanceof Error ? err.message : String(err));
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [granularity, range, state?.service.dataFilePath]);
+
+  const windowTotals = useMemo(() => sumPoints(points), [points]);
+  const activeAccounts = summary.active_accounts || state?.counts.enabledUpstreams || 0;
+  const totalAccounts = summary.total_accounts || state?.counts.upstreams || 0;
+  const totalHitRate = formatHitRate(summary.total_cached_tokens, summary.total_input_tokens);
+  const rangeHitRate = formatHitRate(windowTotals.cached_tokens, windowTotals.input_tokens);
+  const averageTokens =
+    windowTotals.request_count > 0 ? windowTotals.total_tokens / windowTotals.request_count : 0;
+
+  function updateGranularity(next: UsageGranularity) {
+    setGranularity(next);
+    if (next === "daily" && typeof range === "number" && range < 72) {
+      setRange(72);
+    }
+    if (next === "five_min" && (range === "all" || (typeof range === "number" && range > 24))) {
+      setRange(24);
+    }
+  }
 
   return (
-    <div className="grid gap-8">
-      <div className="grid grid-cols-[repeat(auto-fit,minmax(112px,1fr))] gap-3">
-        <UsageMetric icon={Sigma} label={i18n.usagePage.totalUnits} value={formatCompact(totalUnits)} />
-        <UsageMetric icon={Activity} label={i18n.usagePage.totalRequests} value={formatCompact(totalRequests)} />
-        <UsageMetric icon={Zap} label={i18n.usagePage.averageUnits} value={formatCompact(averageUnits)} />
-        <UsageMetric
-          icon={UsersRound}
-          label={i18n.usagePage.activeAccounts}
-          value={`${activeAccounts} / ${state?.counts.upstreams ?? 0}`}
-        />
-        <UsageMetric
-          icon={KeyRound}
-          label={i18n.usagePage.activeKeys}
-          value={`${activeKeys} / ${state?.counts.clientKeys ?? 0}`}
-        />
-        <UsageMetric
-          icon={Gauge}
-          label={i18n.usagePage.quotaAverage}
-          value={quotaAverage === null ? "-" : `${Math.round(quotaAverage)}%`}
-        />
-        <UsageMetric icon={RadioTower} label={i18n.usagePage.limitedAccounts} value={limitedAccounts} />
-        <UsageMetric icon={BarChart3} label={i18n.usagePage.recentUnits} value={formatCompact(recentUnits)} />
-      </div>
-
-      <div className="flex flex-wrap gap-2">
-        {ranges.map((range) => {
-          const active = range.id === rangeId;
-          return (
-            <button
-              key={range.id}
-              type="button"
-              onClick={() => setRangeId(range.id)}
-              className={[
-                "min-h-7 rounded-full border px-4 text-xs font-extrabold transition",
-                active
-                  ? "border-hub-500 bg-hub-500 text-white shadow-sm"
-                  : "border-slate-200 bg-white text-ink hover:border-hub-100 hover:bg-hub-50"
-              ].join(" ")}
-            >
-              {range.label}
-            </button>
-          );
-        })}
-      </div>
-
-      <section className="rounded-control border border-slate-200 bg-white p-5 shadow-sm">
-        <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-          <div className="flex flex-wrap items-center gap-4 text-xs font-extrabold text-muted">
-            <span className="inline-flex items-center gap-1.5">
-              <span className="h-0.5 w-3 rounded-full bg-signal-blue" />
-              {i18n.usagePage.unitsLine}
-            </span>
-            <span className="inline-flex items-center gap-1.5">
-              <span className="h-0.5 w-3 rounded-full bg-hub-500" />
-              {i18n.usagePage.requestsLine}
-            </span>
-          </div>
-          <span className="text-xs font-extrabold text-muted">{i18n.usagePage.chartTitle}</span>
+    <div className="page-stack">
+      <section className="overflow-hidden rounded-control border border-line/80 bg-white/90 shadow-sm backdrop-blur">
+        <div className="grid grid-cols-2 divide-x divide-y divide-line/70 max-sm:grid-cols-1 sm:grid-cols-4 xl:grid-cols-8 xl:divide-y-0">
+          <SummaryCard icon={Sigma} label={copy.totalTokens} value={formatTokenTotal(summary.total_tokens)} hint={copy.realBackend} />
+          <SummaryCard icon={Layers3} label={copy.inputTokens} value={formatTokenTotal(summary.total_input_tokens)} hint={copy.accumulated} />
+          <SummaryCard icon={Database} label={copy.outputTokens} value={formatTokenTotal(summary.total_output_tokens)} hint={copy.accumulated} />
+          <SummaryCard icon={CircleGauge} label={copy.cacheHitRate} value={totalHitRate} hint={formatTokenTotal(summary.total_cached_tokens)} />
+          <SummaryCard icon={WalletCards} label={copy.windowTokens} value={formatTokenTotal(windowTotals.total_tokens)} hint={rangeLabel(range)} />
+          <SummaryCard icon={Gauge} label={copy.windowHitRate} value={rangeHitRate} hint={formatTokenTotal(windowTotals.cached_tokens)} />
+          <SummaryCard icon={Hash} label={copy.requests} value={formatNumber(summary.total_request_count)} hint={`${formatNumber(windowTotals.request_count)} ${copy.inWindow}`} />
+          <SummaryCard icon={Boxes} label={copy.accounts} value={`${activeAccounts}/${totalAccounts}`} hint={copy.availableAccounts} />
         </div>
+      </section>
 
-        {series.length > 1 ? (
-          <UsageChart points={series} />
-        ) : (
-          <div className="grid min-h-[280px] place-items-center rounded-control border border-dashed border-slate-200 bg-slate-50 text-sm font-extrabold text-muted">
-            {i18n.usagePage.noUsage}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <SegmentedControl label={copy.granularity} items={granularities} value={granularity} onChange={updateGranularity} />
+          <SegmentedControl
+            label={copy.range}
+            items={ranges.filter((item) => rangeAllowed(item.id, granularity))}
+            value={range}
+            onChange={setRange}
+          />
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <StatBadge icon={Zap} label={copy.avgTokens} value={formatTokenTotal(averageTokens)} />
+          <StatBadge icon={Activity} label={copy.reasoning} value={formatTokenTotal(windowTotals.reasoning_tokens)} />
+          <button
+            className="button button-secondary button-small"
+            type="button"
+            disabled={loading}
+            onClick={() => {
+              setRange((current) => current);
+              void api.usageSummary().then(setSummary);
+              void api.usageHistory(granularity, range).then((history) => setPoints(history.data_points));
+            }}
+          >
+            <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
+            {copy.refresh}
+          </button>
+        </div>
+      </div>
+
+      <section className="panel overflow-hidden">
+        <div className="panel-head">
+          <div>
+            <h3 className="panel-title">{copy.trendTitle}</h3>
+            <p className="panel-copy">{copy.trendCopy}</p>
           </div>
-        )}
-
-        <p className="m-0 mt-4 text-xs leading-5 text-muted">{i18n.usagePage.sourceNote}</p>
+          <span className="badge">{rangeLabel(range)}</span>
+        </div>
+        <div className="p-5">
+          {error ? (
+            <div className="rounded-control border border-red-100 bg-red-50 px-4 py-3 text-sm font-bold text-signal-red">{error}</div>
+          ) : loading ? (
+            <EmptyUsage label={copy.loading} />
+          ) : points.length > 0 ? (
+            <UsageChart points={points} />
+          ) : (
+            <EmptyUsage label={copy.noUsage} />
+          )}
+        </div>
       </section>
     </div>
   );
 }
 
-function UsageMetric({
+function SummaryCard({
   icon: Icon,
   label,
-  value
+  value,
+  hint
 }: {
-  icon: typeof Sigma;
+  icon: LucideIcon;
   label: string;
-  value: number | string;
+  value: string;
+  hint: string;
 }) {
   return (
-    <article className="grid min-h-[134px] content-between rounded-control border border-slate-200 bg-white px-4 py-4 shadow-sm">
-      <div className="flex items-start justify-between gap-3">
-        <span className="max-w-[8rem] text-xs font-extrabold leading-5 text-muted">{label}</span>
-        <Icon size={16} className="text-hub-500" />
+    <article className="grid min-h-[104px] content-between bg-white/70 px-4 py-3">
+      <div className="flex items-center gap-2">
+        <Icon size={14} className="shrink-0 text-muted" />
+        <span className="truncate text-[11px] font-black uppercase tracking-normal text-muted">{label}</span>
       </div>
-      <strong className="text-2xl font-black leading-none tracking-normal text-[#071b35] tabular-nums">{value}</strong>
-      <span className="h-1 w-12 rounded-full bg-hub-100" />
+      <strong className="mt-2 font-mono text-xl font-black leading-none text-ink tabular-nums">{value}</strong>
+      <span className="mt-1 truncate text-[11px] leading-4 text-muted">{hint}</span>
     </article>
   );
 }
 
-function UsageChart({ points }: { points: SeriesPoint[] }) {
-  const width = 760;
-  const height = 300;
-  const padding = { top: 18, right: 26, bottom: 30, left: 62 };
-  const plotWidth = width - padding.left - padding.right;
-  const plotHeight = height - padding.top - padding.bottom;
-  const start = points[0]?.timestamp ?? Date.now();
-  const end = points.at(-1)?.timestamp ?? start + 1;
-  const span = Math.max(1, end - start);
-  const maxValue = Math.max(1, ...points.flatMap((point) => [point.units, point.requests]));
-  const unitLine = polyline(points, "units", start, span, maxValue, padding, plotWidth, plotHeight);
-  const requestLine = polyline(points, "requests", start, span, maxValue, padding, plotWidth, plotHeight);
-  const ticks = [1, 0.75, 0.5, 0.25, 0].map((ratio) => Math.round(maxValue * ratio));
-
+function SegmentedControl<T extends string | number>({
+  label,
+  items,
+  value,
+  onChange
+}: {
+  label: string;
+  items: Array<{ id: T; label: string }>;
+  value: T;
+  onChange: (value: T) => void;
+}) {
   return (
-    <svg className="h-[300px] w-full overflow-visible" viewBox={`0 0 ${width} ${height}`} role="img">
-      {ticks.map((tick, index) => {
-        const y = padding.top + plotHeight * (index / Math.max(1, ticks.length - 1));
-        return (
-          <g key={`${tick}-${index}`}>
-            <line x1={padding.left} x2={width - padding.right} y1={y} y2={y} stroke="#edf1f3" strokeWidth="1" />
-            <text x={padding.left - 10} y={y + 4} textAnchor="end" className="fill-muted text-[11px] font-bold">
-              {formatCompact(tick)}
-            </text>
-          </g>
-        );
-      })}
-      <line
-        x1={padding.left}
-        x2={width - padding.right}
-        y1={height - padding.bottom}
-        y2={height - padding.bottom}
-        stroke="#e2e8ec"
-      />
-      <polyline points={unitLine} fill="none" stroke="#2d6fc7" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-      <polyline points={requestLine} fill="none" stroke="#14735b" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-      {points.map((point, index) => {
-        const [x, y] = pointXY(point, "units", start, span, maxValue, padding, plotWidth, plotHeight);
-        return <circle key={`${point.timestamp}-${index}`} cx={x} cy={y} r="3.5" fill="#2d6fc7" />;
-      })}
-    </svg>
+    <div className="flex max-w-full items-center gap-2">
+      <span className="text-xs font-black text-muted">{label}</span>
+      <div className="flex max-w-full flex-wrap gap-1 rounded-control border border-line/80 bg-white/75 p-1 shadow-sm">
+        {items.map((item) => {
+          const active = item.id === value;
+          return (
+            <button
+              key={String(item.id)}
+              type="button"
+              onClick={() => onChange(item.id)}
+              className={[
+                "min-h-7 rounded-control border px-3 text-xs font-black transition",
+                active
+                  ? "border-hub-600 bg-hub-600 text-white shadow-sm"
+                  : "border-transparent bg-transparent text-muted hover:bg-hub-50 hover:text-hub-700"
+              ].join(" ")}
+            >
+              {item.label}
+            </button>
+          );
+        })}
+      </div>
+    </div>
   );
 }
 
-function rangeOptions(i18n: Messages): RangeOption[] {
-  const minute = 60 * 1000;
-  const hour = 60 * minute;
-  const day = 24 * hour;
-  return [
-    { id: "5m", label: i18n.usagePage.minutes5, ms: 5 * minute },
-    { id: "1h", label: i18n.usagePage.hour1, ms: hour },
-    { id: "1d", label: i18n.usagePage.day1, ms: day },
-    { id: "6h", label: i18n.usagePage.last6h, ms: 6 * hour },
-    { id: "24h", label: i18n.usagePage.last24h, ms: day },
-    { id: "3d", label: i18n.usagePage.last3d, ms: 3 * day },
-    { id: "7d", label: i18n.usagePage.last7d, ms: 7 * day },
-    { id: "30d", label: i18n.usagePage.last30d, ms: 30 * day },
-    { id: "all", label: i18n.usagePage.all, ms: null }
-  ];
+function StatBadge({ icon: Icon, label, value }: { icon: LucideIcon; label: string; value: string }) {
+  return (
+    <span className="inline-flex h-8 items-center gap-2 rounded-control border border-line/70 bg-white/75 px-2.5 text-xs shadow-sm">
+      <Icon size={13} className="text-muted" />
+      <span className="text-muted">{label}</span>
+      <span className="font-mono font-black text-ink tabular-nums">{value}</span>
+    </span>
+  );
 }
 
-function buildSeries(logs: AuditLogEntry[], rangeMs: number | null): SeriesPoint[] {
-  const now = Date.now();
-  const events = logs
-    .map((log) => ({
-      timestamp: Date.parse(log.timestamp),
-      units: typeof log.usageUnits === "number" && Number.isFinite(log.usageUnits) ? log.usageUnits : 0,
-      requests: log.kind === "proxy" ? 1 : 0
-    }))
-    .filter((event) => Number.isFinite(event.timestamp) && (event.units > 0 || event.requests > 0))
-    .filter((event) => rangeMs === null || event.timestamp >= now - rangeMs)
-    .sort((left, right) => left.timestamp - right.timestamp);
+function UsageChart({ points }: { points: UsageDataPoint[] }) {
+  const width = 900;
+  const height = 340;
+  const padding = { top: 24, right: 28, bottom: 46, left: 72 };
+  const plotWidth = width - padding.left - padding.right;
+  const plotHeight = height - padding.top - padding.bottom;
+  const maxTokens = Math.max(1, ...points.map((point) => Math.max(point.input_tokens, point.output_tokens, point.cached_tokens)));
+  const x = (index: number) => padding.left + (index / Math.max(1, points.length - 1)) * plotWidth;
+  const y = (value: number) => padding.top + plotHeight - (value / maxTokens) * plotHeight;
+  const input = points.map((point, index) => `${x(index)},${y(point.input_tokens)}`).join(" ");
+  const output = points.map((point, index) => `${x(index)},${y(point.output_tokens)}`).join(" ");
+  const cached = points.map((point, index) => `${x(index)},${y(point.cached_tokens)}`).join(" ");
+  const ticks = [1, 0.75, 0.5, 0.25, 0].map((ratio) => Math.round(maxTokens * ratio));
 
-  if (events.length === 0) {
-    return [];
-  }
-
-  const start = rangeMs === null ? events[0].timestamp : now - rangeMs;
-  const end = rangeMs === null ? Math.max(events.at(-1)?.timestamp ?? now, start + 1) : now;
-  const points: SeriesPoint[] = [{ timestamp: start, units: 0, requests: 0 }];
-  let units = 0;
-  let requests = 0;
-  for (const event of events) {
-    units += event.units;
-    requests += event.requests;
-    points.push({ timestamp: event.timestamp, units, requests });
-  }
-  points.push({ timestamp: end, units, requests });
-  return points;
+  return (
+    <div>
+      <div className="mb-3 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs font-black text-muted">
+        <Legend color="#2563eb" label="Input tokens" />
+        <Legend color="#16a34a" label="Output tokens" />
+        <Legend color="#a855f7" label="Cached tokens" dashed />
+      </div>
+      <svg className="h-[340px] w-full overflow-visible" viewBox={`0 0 ${width} ${height}`} role="img">
+        {ticks.map((tick, index) => {
+          const yPos = padding.top + plotHeight * (index / Math.max(1, ticks.length - 1));
+          return (
+            <g key={`${tick}-${index}`}>
+              <line x1={padding.left} x2={width - padding.right} y1={yPos} y2={yPos} stroke="#dde8e3" strokeWidth="1" />
+              <text x={padding.left - 10} y={yPos + 4} textAnchor="end" className="fill-muted text-[11px] font-bold">
+                {formatTokenTotal(tick)}
+              </text>
+            </g>
+          );
+        })}
+        <polyline points={input} fill="none" stroke="#2563eb" strokeWidth="2.5" strokeLinejoin="round" />
+        <polyline points={output} fill="none" stroke="#16a34a" strokeWidth="2.5" strokeLinejoin="round" />
+        <polyline points={cached} fill="none" stroke="#a855f7" strokeWidth="2.5" strokeDasharray="5 4" strokeLinejoin="round" />
+        {points.map((point, index) => (
+          <g key={`${point.timestamp}-${index}`}>
+            <circle cx={x(index)} cy={y(point.input_tokens)} r="2.5" fill="#2563eb" />
+            <circle cx={x(index)} cy={y(point.output_tokens)} r="2.5" fill="#16a34a" />
+            <circle cx={x(index)} cy={y(point.cached_tokens)} r="2.5" fill="#a855f7" />
+          </g>
+        ))}
+        {axisLabels(points).map((tick) => (
+          <text key={tick.index} x={x(tick.index)} y={height - 14} textAnchor="middle" className="fill-muted text-[11px] font-bold">
+            {tick.label}
+          </text>
+        ))}
+      </svg>
+    </div>
+  );
 }
 
-function polyline(
-  points: SeriesPoint[],
-  key: "units" | "requests",
-  start: number,
-  span: number,
-  maxValue: number,
-  padding: { top: number; left: number },
-  plotWidth: number,
-  plotHeight: number
-): string {
+function Legend({ color, label, dashed = false }: { color: string; label: string; dashed?: boolean }) {
+  return (
+    <span className="inline-flex items-center gap-1.5">
+      <span className={["inline-block h-0.5 w-5 rounded-full", dashed ? "border-t-2 border-dashed bg-transparent" : ""].join(" ")} style={{ backgroundColor: dashed ? "transparent" : color, borderColor: color }} />
+      {label}
+    </span>
+  );
+}
+
+function EmptyUsage({ label }: { label: string }) {
+  return (
+    <div className="grid min-h-[300px] place-items-center rounded-control border border-dashed border-line bg-mist/50 text-sm font-black text-muted">
+      {label}
+    </div>
+  );
+}
+
+function sumPoints(points: UsageDataPoint[]): UsageDataPoint {
+  return points.reduce<UsageDataPoint>(
+    (total, point) => ({
+      timestamp: point.timestamp,
+      input_tokens: total.input_tokens + point.input_tokens,
+      output_tokens: total.output_tokens + point.output_tokens,
+      total_tokens: total.total_tokens + point.total_tokens,
+      cached_tokens: total.cached_tokens + point.cached_tokens,
+      reasoning_tokens: total.reasoning_tokens + point.reasoning_tokens,
+      request_count: total.request_count + point.request_count
+    }),
+    {
+      timestamp: "",
+      input_tokens: 0,
+      output_tokens: 0,
+      total_tokens: 0,
+      cached_tokens: 0,
+      reasoning_tokens: 0,
+      request_count: 0
+    }
+  );
+}
+
+function axisLabels(points: UsageDataPoint[]) {
+  const step = Math.max(1, Math.ceil(points.length / 6));
   return points
-    .map((point) => pointXY(point, key, start, span, maxValue, padding, plotWidth, plotHeight).join(","))
-    .join(" ");
+    .map((point, index) => ({ index, label: formatTime(point.timestamp) }))
+    .filter((_, index) => index % step === 0 || index === points.length - 1);
 }
 
-function pointXY(
-  point: SeriesPoint,
-  key: "units" | "requests",
-  start: number,
-  span: number,
-  maxValue: number,
-  padding: { top: number; left: number },
-  plotWidth: number,
-  plotHeight: number
-): [number, number] {
-  const x = padding.left + ((point.timestamp - start) / span) * plotWidth;
-  const y = padding.top + plotHeight - (point[key] / maxValue) * plotHeight;
-  return [Math.max(padding.left, Math.min(padding.left + plotWidth, x)), Math.max(padding.top, Math.min(padding.top + plotHeight, y))];
+function rangeAllowed(range: UsageHistoryRange, granularity: UsageGranularity): boolean {
+  if (granularity === "daily") {
+    return range === "all" || (typeof range === "number" && range >= 72);
+  }
+  if (granularity === "five_min") {
+    return typeof range === "number" && range <= 24;
+  }
+  return range !== 1;
 }
 
-function formatCompact(value: number): string {
+function rangeLabel(range: UsageHistoryRange): string {
+  if (range === "all") {
+    return "All history";
+  }
+  if (range < 24) {
+    return `${range}h`;
+  }
+  return `${Math.round(range / 24)}d`;
+}
+
+function formatTime(value: string): string {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+  return date.toLocaleString(undefined, { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" });
+}
+
+function formatNumber(value: number): string {
+  return new Intl.NumberFormat().format(Math.round(Number.isFinite(value) ? value : 0));
+}
+
+function formatDecimal(value: number): string {
   return new Intl.NumberFormat(undefined, {
-    notation: Math.abs(value) >= 10000 ? "compact" : "standard",
-    maximumFractionDigits: value >= 1000 ? 1 : 0
-  }).format(value);
+    maximumFractionDigits: value >= 10 ? 1 : 2
+  }).format(Number.isFinite(value) ? value : 0);
+}
+
+function formatHitRate(cached: number, input: number): string {
+  if (!input) {
+    return "--";
+  }
+  return `${formatDecimal((cached / input) * 100)}%`;
+}
+
+function formatTokenTotal(value: number): string {
+  return new Intl.NumberFormat(undefined, {
+    maximumFractionDigits: 0
+  }).format(Math.round(Number.isFinite(value) ? value : 0));
+}
+
+function usageCopy(i18n: Messages) {
+  const chinese = i18n.common.service !== "Service";
+  return chinese
+    ? {
+        totalTokens: "总 Token",
+        inputTokens: "输入 Token",
+        outputTokens: "输出 Token",
+        cacheHitRate: "缓存命中率",
+        windowTokens: "窗口消耗",
+        windowHitRate: "窗口命中率",
+        requests: "请求数",
+        accounts: "账号",
+        realBackend: "后端真实 usage 汇总",
+        accumulated: "账号累计",
+        inWindow: "窗口内",
+        availableAccounts: "可用/全部",
+        granularity: "粒度",
+        range: "范围",
+        avgTokens: "均值",
+        reasoning: "Reasoning",
+        refresh: "刷新",
+        trendTitle: "Token 用量趋势",
+        trendCopy: "来自 usage-history.json 快照，不再从 usageUnits 或旧日志推算。",
+        loading: "正在读取真实用量...",
+        noUsage: "当前时间窗口内暂无真实 Token 用量。"
+      }
+    : {
+        totalTokens: "Total tokens",
+        inputTokens: "Input tokens",
+        outputTokens: "Output tokens",
+        cacheHitRate: "Cache hit rate",
+        windowTokens: "Window tokens",
+        windowHitRate: "Window hit rate",
+        requests: "Requests",
+        accounts: "Accounts",
+        realBackend: "Real backend usage",
+        accumulated: "Account cumulative",
+        inWindow: "in window",
+        availableAccounts: "available / total",
+        granularity: "Granularity",
+        range: "Range",
+        avgTokens: "Avg tokens",
+        reasoning: "Reasoning",
+        refresh: "Refresh",
+        trendTitle: "Token Usage Trend",
+        trendCopy: "Backed by usage-history.json snapshots, not inferred from usageUnits or legacy logs.",
+        loading: "Loading real usage...",
+        noUsage: "No real token usage in this window yet."
+      };
 }

@@ -18,14 +18,15 @@ export function TopBar({
   const title = i18n.pages[activeTab];
 
   return (
-    <header className="mb-6 flex min-h-[72px] items-center justify-between gap-5 max-md:grid">
+    <header className="flex min-h-[76px] items-center justify-between gap-5 rounded-control border border-line/70 bg-white/70 px-5 py-4 shadow-sm backdrop-blur-xl max-md:grid">
       <div>
-        <h2 className="m-0 text-2xl font-black leading-tight text-ink">{title.title}</h2>
-        <p className="m-0 mt-1 text-sm text-muted">{title.subtitle}</p>
+        <p className="m-0 mb-1 text-[11px] font-black uppercase text-hub-700">Breeze Console</p>
+        <h2 className="m-0 font-display text-2xl font-black leading-tight text-ink">{title.title}</h2>
+        <p className="m-0 mt-1 max-w-3xl text-sm leading-6 text-muted">{title.subtitle}</p>
       </div>
 
       <div className="flex flex-wrap items-center justify-end gap-2 max-md:justify-start">
-        <span className="inline-flex min-h-10 items-center gap-2 rounded-control border border-hub-100 bg-hub-50 px-3 text-sm font-extrabold text-hub-600">
+        <span className="inline-flex min-h-10 items-center gap-2 rounded-control border border-hub-100 bg-hub-50 px-3 text-sm font-black text-hub-700">
           <MonitorDot size={16} />
           {i18n.common.localIntranetMvp}
         </span>

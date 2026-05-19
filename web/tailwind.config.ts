@@ -5,28 +5,35 @@ export default {
   theme: {
     extend: {
       colors: {
-        canvas: "#f5f7f8",
-        ink: "#17211d",
-        muted: "#66736e",
+        canvas: "#f6faf8",
+        surface: "#ffffff",
+        mist: "#eef8f4",
+        ink: "#10201a",
+        muted: "#62736b",
+        line: "#dce8e3",
         hub: {
           50: "#edf9f4",
-          100: "#d5f0e6",
-          500: "#14735b",
-          600: "#0f5f4c",
-          900: "#17211d"
+          100: "#d6f3e8",
+          200: "#a8e3d0",
+          500: "#31a57f",
+          600: "#1e8c78",
+          700: "#146f61",
+          900: "#10201a"
         },
         signal: {
-          blue: "#2d6fc7",
-          amber: "#a86913",
-          red: "#b94225"
+          blue: "#4c8bdc",
+          amber: "#c78725",
+          red: "#c95846"
         }
       },
       boxShadow: {
-        panel: "0 18px 48px rgba(27, 42, 36, 0.08)"
+        panel: "0 22px 54px rgba(32, 64, 52, 0.1)",
+        lift: "0 12px 26px rgba(29, 75, 60, 0.12)"
       },
       fontFamily: {
-        sans: ["Aptos", "Segoe UI Variable Text", "Microsoft YaHei UI", "sans-serif"],
-        mono: ["Cascadia Mono", "Consolas", "SFMono-Regular", "monospace"]
+        sans: ["Aptos", "HarmonyOS Sans SC", "Microsoft YaHei UI", "Segoe UI Variable Text", "sans-serif"],
+        display: ["Aptos Display", "Aptos", "HarmonyOS Sans SC", "Microsoft YaHei UI", "sans-serif"],
+        mono: ["JetBrains Mono", "Cascadia Mono", "Consolas", "SFMono-Regular", "monospace"]
       },
       borderRadius: {
         control: "8px"

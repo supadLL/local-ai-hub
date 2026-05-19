@@ -26,6 +26,10 @@ export class FileStore {
 
   constructor(private readonly filePath: string) {}
 
+  dataDir(): string {
+    return path.dirname(this.filePath);
+  }
+
   async init(): Promise<void> {
     if (this.initPromise) {
       return this.initPromise;

@@ -11,10 +11,10 @@ export function Feedback({ message, isError }: FeedbackProps) {
   return (
     <div
       className={[
-        "fixed bottom-6 right-6 z-30 max-w-[min(520px,calc(100vw-48px))] rounded-control border px-4 py-3 text-sm shadow-panel",
+        "fixed bottom-6 right-6 z-30 max-w-[min(520px,calc(100vw-48px))] rounded-control border px-4 py-3 text-sm font-bold shadow-panel backdrop-blur",
         isError
-          ? "border-red-200 bg-red-50 text-signal-red"
-          : "border-slate-200 bg-white text-ink"
+          ? "border-red-200 bg-red-50/95 text-signal-red"
+          : "border-line bg-white/95 text-ink"
       ].join(" ")}
       role="status"
     >

@@ -8,34 +8,67 @@
   }
 
   body {
-    @apply m-0 bg-canvas text-ink font-sans;
+    @apply m-0 bg-canvas font-sans text-ink antialiased;
     background:
-      linear-gradient(135deg, rgba(20, 115, 91, 0.08) 0 1px, transparent 1px 18px),
-      linear-gradient(180deg, #f8fafb 0%, #f5f7f8 100%);
+      linear-gradient(120deg, rgba(49, 165, 127, 0.09) 0 1px, transparent 1px 22px),
+      linear-gradient(180deg, rgba(255, 255, 255, 0.92) 0%, rgba(246, 250, 248, 0.98) 48%, #eef8f4 100%);
+    background-attachment: fixed;
   }
 
   button,
   input,
-  textarea {
+  textarea,
+  select {
     font: inherit;
+  }
+
+  ::selection {
+    background: rgba(49, 165, 127, 0.18);
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
 }
 
 @layer components {
   .panel {
-    @apply rounded-control border border-slate-200 bg-white/95 shadow-sm;
+    @apply rounded-control border border-line/80 bg-white/90 shadow-sm backdrop-blur;
   }
 
   .panel-head {
-    @apply flex items-center justify-between gap-3 border-b border-slate-200 px-5 py-4;
+    @apply flex items-center justify-between gap-3 border-b border-line/80 px-5 py-4;
   }
 
   .panel-title {
-    @apply m-0 text-[15px] font-extrabold text-ink;
+    @apply m-0 font-display text-[15px] font-black text-ink;
   }
 
   .panel-copy {
-    @apply m-0 mt-1 text-xs text-muted;
+    @apply m-0 mt-1 text-xs leading-5 text-muted;
+  }
+
+  .surface {
+    @apply rounded-control border border-line/80 bg-white/90 shadow-sm backdrop-blur;
+  }
+
+  .surface-tint {
+    @apply rounded-control border border-hub-100/80 bg-mist/80 shadow-sm;
+  }
+
+  .page-stack {
+    @apply grid gap-5;
+  }
+
+  .section-kicker {
+    @apply inline-flex items-center gap-2 rounded-full border border-hub-100 bg-hub-50 px-3 py-1 text-[11px] font-black uppercase text-hub-700;
   }
 
   .field {
@@ -43,23 +76,23 @@
   }
 
   .field-label {
-    @apply text-xs font-extrabold text-muted;
+    @apply text-xs font-black text-muted;
   }
 
   .input {
-    @apply w-full rounded-control border border-slate-200 bg-white px-3 py-2.5 text-sm text-ink outline-none transition focus:border-hub-500/70 focus:ring-4 focus:ring-hub-500/10;
+    @apply w-full rounded-control border border-line bg-white/95 px-3 py-2.5 text-sm text-ink outline-none transition placeholder:text-muted/60 focus:border-hub-500/70 focus:bg-white focus:ring-4 focus:ring-hub-500/10;
   }
 
   .button {
-    @apply inline-flex min-h-10 items-center justify-center gap-2 rounded-control border border-transparent bg-hub-500 px-3.5 py-2 text-sm font-extrabold text-white transition hover:bg-hub-600 active:translate-y-px;
+    @apply inline-flex min-h-10 items-center justify-center gap-2 rounded-control border border-transparent bg-hub-600 px-3.5 py-2 text-sm font-black text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-hub-700 hover:shadow-lift active:translate-y-px;
   }
 
   .button-secondary {
-    @apply border-slate-200 bg-white text-ink hover:bg-slate-50;
+    @apply border-line bg-white/90 text-ink shadow-none hover:border-hub-100 hover:bg-hub-50 hover:text-hub-700 hover:shadow-sm;
   }
 
   .button-danger {
-    @apply bg-signal-red text-white hover:bg-[#98351e];
+    @apply bg-signal-red text-white hover:bg-[#a94235];
   }
 
   .button-small {
@@ -67,18 +100,33 @@
   }
 
   .chip {
-    @apply inline-flex min-h-6 items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-extrabold text-muted;
+    @apply inline-flex min-h-6 items-center gap-1.5 rounded-full border border-line/70 bg-white/80 px-2.5 py-0.5 text-xs font-black text-muted;
   }
 
   .chip-success {
-    @apply bg-hub-100 text-hub-600;
+    @apply border-hub-100 bg-hub-50 text-hub-700;
   }
 
   .chip-info {
-    @apply bg-blue-50 text-signal-blue;
+    @apply border-blue-100 bg-blue-50 text-signal-blue;
   }
 
   .chip-warn {
-    @apply bg-amber-50 text-signal-amber;
+    @apply border-amber-100 bg-amber-50 text-signal-amber;
+  }
+
+  .metric-card {
+    @apply grid min-h-28 content-between rounded-control border border-line/80 bg-white/90 p-4 shadow-sm backdrop-blur transition hover:-translate-y-0.5 hover:shadow-panel;
+  }
+
+  .code-card {
+    @apply overflow-auto rounded-control border border-[#d2e2db] bg-[#f8fffb] p-4 font-mono text-xs leading-6 text-[#14352b] shadow-inner;
+  }
+
+  .soft-grid {
+    background-image:
+      linear-gradient(rgba(49, 165, 127, 0.08) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(49, 165, 127, 0.08) 1px, transparent 1px);
+    background-size: 24px 24px;
   }
 }

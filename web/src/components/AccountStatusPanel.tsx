@@ -1,21 +1,18 @@
 import {
   Activity,
-  Gauge,
   HeartPulse,
   RadioTower,
   RefreshCw,
   Server,
-  ShieldCheck,
   Trash2,
   WifiOff
 } from "lucide-react";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import type { Messages } from "../i18n";
 import type {
   AdminState,
   UpstreamAccount,
   UpstreamHealthCheckResponse,
-  UpstreamQuotaLimitBucket,
   UpstreamQuotaWindow,
   UpstreamProbeResult
 } from "../types";
@@ -105,18 +102,16 @@ export function AccountStatusPanel({
 
   return (
     <section className="panel overflow-hidden">
-      <div className="relative overflow-hidden border-b border-slate-200 bg-[#101816] px-5 py-5 text-white">
-        <div className="absolute -right-14 -top-14 h-36 w-36 rounded-full bg-hub-500/35 blur-2xl" />
-        <div className="absolute bottom-0 left-0 h-px w-full bg-gradient-to-r from-transparent via-hub-100/50 to-transparent" />
-        <div className="relative flex items-start justify-between gap-4">
+      <div className="soft-grid border-b border-line/80 bg-white px-5 py-5">
+        <div className="flex items-start justify-between gap-4">
           <div>
-            <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs font-extrabold text-white/85">
+            <div className="section-kicker mb-3">
               <RadioTower size={14} />
               {i18n.importPage.accountStatusTitle}
             </div>
-            <p className="m-0 max-w-md text-sm leading-6 text-white/72">{i18n.importPage.accountStatusCopy}</p>
+            <p className="m-0 max-w-md text-sm leading-6 text-muted">{i18n.importPage.accountStatusCopy}</p>
           </div>
-          <div className="grid size-11 place-items-center rounded-2xl border border-white/15 bg-white/10">
+          <div className="grid size-11 place-items-center rounded-control border border-hub-100 bg-hub-50 text-hub-700">
             <HeartPulse size={21} />
           </div>
         </div>
@@ -156,21 +151,21 @@ export function AccountStatusPanel({
         </div>
 
         {summary ? (
-          <div className="rounded-[16px] border border-hub-100 bg-hub-50 px-3 py-2 text-xs font-extrabold text-hub-900">
+          <div className="rounded-control border border-hub-100 bg-hub-50 px-3 py-2 text-xs font-black text-hub-900">
             {i18n.importPage.healthSummary(summary.alive, summary.dead, summary.skipped)}
           </div>
         ) : null}
 
         {accounts.length === 0 ? (
-          <div className="rounded-[22px] border border-dashed border-slate-300 bg-slate-50 px-4 py-8 text-center">
+          <div className="rounded-control border border-dashed border-line bg-white/70 px-4 py-8 text-center">
             <Server className="mx-auto mb-3 text-muted" size={26} />
             <h3 className="m-0 text-sm font-black text-ink">{i18n.importPage.noImportedAccounts}</h3>
             <p className="mx-auto mt-2 max-w-xs text-xs leading-5 text-muted">{i18n.importPage.noImportedAccountsCopy}</p>
           </div>
         ) : (
-          <div className="grid gap-3">
+          <div className="grid grid-cols-3 gap-3 max-xl:grid-cols-2 max-md:grid-cols-1">
             {accounts.map((account, index) => (
-              <AccountStatusCard
+              <CompactAccountStatusCard
                 key={account.id}
                 account={account}
                 index={index}
@@ -191,7 +186,7 @@ export function AccountStatusPanel({
   );
 }
 
-function AccountStatusCard({
+function CompactAccountStatusCard({
   account,
   index,
   i18n,
@@ -214,153 +209,175 @@ function AccountStatusCard({
   onQuotaRefresh: () => void;
   onDelete: () => void;
 }) {
-  const status = deriveStatus(account, i18n);
   const quota = account.quota;
-  const primaryQuota = quota?.rateLimit ?? legacyQuotaWindow(quota);
-  const additionalRateLimits = visibleAdditionalRateLimits(quota?.additionalRateLimits ?? []);
+  const quotaMeters = compactQuotaMeters(quota, i18n);
+  const usage = account.usage;
+  const usedTokens = usage?.total_tokens ?? 0;
+  const inputTokens = usage?.input_tokens ?? 0;
+  const outputTokens = usage?.output_tokens ?? 0;
+  const cachedTokens = usage?.cached_tokens ?? 0;
+  const requestCount = usage?.request_count ?? account.requestCount ?? 0;
+  const cacheHitRate = inputTokens > 0 ? `${formatDecimal((cachedTokens / inputTokens) * 100)}%` : "--";
   const initial = account.name.trim().charAt(0).toUpperCase() || String(index + 1);
+  const status = deriveCompactStatus(account, i18n);
+  const statusTitle = account.lastProbeError ?? status.label;
 
   return (
-    <article className="group relative overflow-hidden rounded-[24px] border border-slate-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-hub-100 hover:shadow-panel">
-      <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-hub-500 via-[#d7a64a] to-signal-blue opacity-80" />
-
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex min-w-0 items-center gap-3">
-          <div className="grid size-11 shrink-0 place-items-center rounded-[18px] bg-hub-900 text-sm font-black text-white shadow-sm">
-            {initial}
-          </div>
-          <div className="min-w-0">
-            <h3 className="m-0 truncate text-sm font-black text-ink">{account.name}</h3>
-            <p className="m-0 mt-1 truncate text-xs text-muted">
-              {account.endpointHost} · {account.provider}
-            </p>
+    <article className="group relative grid min-h-[270px] content-between overflow-hidden rounded-control border border-line/80 bg-white/95 p-3 text-ink shadow-sm backdrop-blur transition hover:-translate-y-0.5 hover:border-hub-100 hover:shadow-panel">
+      <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-hub-500 via-hub-200 to-signal-blue" />
+      <div className="flex items-start gap-2 pt-1">
+        <span
+          className={`mt-3 size-3.5 shrink-0 rounded-[3px] border ${account.enabled ? "border-hub-500 bg-hub-50" : "border-slate-300 bg-slate-100"}`}
+          title={account.enabled ? i18n.common.enabled : i18n.common.disabled}
+        />
+        <div className="grid size-10 shrink-0 place-items-center rounded-control border border-hub-100 bg-hub-50 text-lg font-black text-hub-700 shadow-inner">
+          {initial}
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="grid min-w-0 gap-0.5">
+            <h3 className="m-0 truncate text-[13px] font-black leading-5 text-ink" title={account.name}>
+              {account.name}
+            </h3>
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span
+                className={`inline-flex max-w-full shrink-0 items-center truncate rounded-full border px-2 py-0.5 text-[11px] font-black ${status.className}`}
+                title={statusTitle}
+              >
+                {status.label}
+              </span>
+              <AccountPlanBadge planType={quota?.planType} />
+            </div>
           </div>
         </div>
-        <span className={`inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-black ${status.className}`}>
-          {status.icon}
-          {status.label}
-        </span>
+        <div className="flex shrink-0 items-center gap-1">
+          <CompactIconButton disabled={blocked || !account.enabled} onClick={onProbe} title={i18n.importPage.checkThisAccount}>
+            <Activity size={14} className={busy ? "animate-pulse" : ""} />
+          </CompactIconButton>
+          <CompactIconButton disabled={blocked || !account.enabled} onClick={onQuotaRefresh} title={i18n.importPage.refreshQuota}>
+            <RefreshCw size={14} className={quotaBusy ? "animate-spin" : ""} />
+          </CompactIconButton>
+          <CompactIconButton disabled={blocked} onClick={onDelete} title={i18n.common.delete} danger>
+            <Trash2 size={14} className={deleting ? "animate-pulse" : ""} />
+          </CompactIconButton>
+        </div>
       </div>
 
-      <div className="mt-4 rounded-[18px] border border-slate-200 bg-slate-50 p-3">
-        <div className="mb-2 flex items-center justify-between gap-3">
-          <span className="inline-flex items-center gap-1.5 text-xs font-black text-ink">
-            <Gauge size={14} />
-            {i18n.importPage.providerQuota}
-          </span>
-          <div className="flex shrink-0 items-center gap-1.5">
-            <span className={`rounded-full px-2 py-0.5 text-[11px] font-black ${quotaTone(quota?.status)}`}>
-              {quotaLabel(quota?.status, i18n)}
-            </span>
-            <button
-              className="grid size-7 place-items-center rounded-lg border border-slate-200 bg-white text-muted transition hover:border-hub-100 hover:text-hub-600 disabled:cursor-not-allowed disabled:opacity-50"
-              type="button"
-              disabled={blocked || !account.enabled}
-              onClick={onQuotaRefresh}
-              title={i18n.importPage.refreshQuota}
-            >
-              <RefreshCw size={13} className={quotaBusy ? "animate-spin" : ""} />
-            </button>
-          </div>
-        </div>
+      <div className="mt-3 grid gap-1.5 rounded-control border border-line/80 bg-mist/45 p-2.5">
+        <InfoRow label={i18n.importPage.requestCount} value={`${formatNumber(requestCount)} req`} />
+        <InfoRow label={i18n.importPage.tokenUsage} value={formatTokenAmount(usedTokens, true)} />
+        <InfoRow label={i18n.importPage.localUsage} value={`In ${formatTokenAmount(inputTokens, true)} / Out ${formatTokenAmount(outputTokens, true)}`} />
+        <InfoRow label="Cache hit" value={`${cacheHitRate} · ${formatTokenAmount(cachedTokens, true)}`} muted={cachedTokens === 0} />
+      </div>
 
-        {quota?.supported ? (
-          <div className="grid gap-3">
-            <div className="flex flex-wrap gap-1.5 text-[11px] font-extrabold">
-              {quota.planType ? (
-                <span className="rounded-full bg-white px-2 py-0.5 text-muted">
-                  {i18n.importPage.planType}: {quota.planType}
-                </span>
-              ) : null}
-              {quota.fetchedAt ? (
-                <span className="rounded-full bg-white px-2 py-0.5 text-muted">
-                  {i18n.importPage.quotaUpdated}: {formatDate(quota.fetchedAt)}
-                </span>
-              ) : null}
-            </div>
-
-            {primaryQuota ? (
-              <QuotaBucket
-                label={i18n.importPage.primaryRateLimit}
-                quotaWindow={primaryQuota}
-                i18n={i18n}
-                tone="primary"
-              />
-            ) : null}
-            {quota.secondaryRateLimit ? (
-              <QuotaBucket
-                label={i18n.importPage.secondaryRateLimit}
-                quotaWindow={quota.secondaryRateLimit}
-                i18n={i18n}
-                tone="secondary"
-              />
-            ) : null}
-            {quota.codeReviewRateLimit ? (
-              <QuotaBucket
-                label={i18n.importPage.codeReviewRateLimit}
-                quotaWindow={quota.codeReviewRateLimit}
-                i18n={i18n}
-                tone="review"
-              />
-            ) : null}
-            {additionalRateLimits.map((bucket) => (
-              <QuotaBucket
-                key={bucket.id}
-                label={`${i18n.importPage.additionalRateLimit}: ${limitBucketLabel(bucket)}`}
-                quotaWindow={bucket}
-                i18n={i18n}
-                tone="additional"
-              />
-            ))}
-
-            {quota.limitRequests != null || quota.remainingRequests != null ? (
-              <div className="grid grid-cols-3 gap-2 text-[11px] text-muted">
-                <span>{i18n.importPage.remainingRequests}: {formatOptionalNumber(quota.remainingRequests)}</span>
-                <span>{i18n.importPage.limitRequests}: {formatOptionalNumber(quota.limitRequests)}</span>
-                <span>{i18n.importPage.resetAt}: {quota.resetRequests ?? "-"}</span>
-              </div>
-            ) : null}
-            <p className="m-0 text-[11px] leading-4 text-muted">
-              {quota.source === "provider-api" ? i18n.importPage.quotaFromProvider : i18n.importPage.quotaFromHeaders}
-            </p>
-          </div>
+      <div className="mt-3 grid gap-2">
+        {quotaMeters.length > 0 ? (
+          quotaMeters.map((item) => (
+            <CompactQuotaMeter key={item.id} label={item.label} quotaWindow={item.quotaWindow} i18n={i18n} />
+          ))
         ) : (
-          <div className="rounded-[14px] border border-dashed border-slate-300 bg-white px-3 py-2">
-            <p className="m-0 text-xs font-black text-ink">{i18n.importPage.quotaUnsupportedTitle}</p>
-            <p className="m-0 mt-1 text-[11px] leading-5 text-muted">{i18n.importPage.quotaUnsupportedCopy}</p>
+          <div className="rounded-control border border-dashed border-line/80 bg-white/70 px-2.5 py-2 text-[11px] font-black text-muted">
+            {i18n.importPage.quotaUnknownLabel}
           </div>
         )}
       </div>
-
-      {account.lastProbeError ? (
-        <p className="mt-3 rounded-[14px] border border-red-100 bg-red-50 px-3 py-2 text-[11px] leading-5 text-signal-red">
-          {account.lastProbeError}
-        </p>
-      ) : null}
-
-      <div className="mt-4 flex flex-wrap items-center justify-end gap-3 border-t border-slate-100 pt-3">
-        <div className="flex flex-wrap justify-end gap-2">
-          <button
-            className="button button-secondary button-small disabled:cursor-not-allowed disabled:opacity-60"
-            type="button"
-            disabled={blocked || !account.enabled}
-            onClick={onProbe}
-          >
-            <Activity size={14} className={busy ? "animate-pulse" : ""} />
-            {busy ? i18n.importPage.healthChecking : i18n.importPage.checkThisAccount}
-          </button>
-          <button
-            className="button button-danger button-small disabled:cursor-not-allowed disabled:opacity-60"
-            type="button"
-            disabled={blocked}
-            onClick={onDelete}
-          >
-            <Trash2 size={14} className={deleting ? "animate-pulse" : ""} />
-            {deleting ? i18n.common.loading : i18n.common.delete}
-          </button>
-        </div>
-      </div>
     </article>
+  );
+}
+
+function AccountPlanBadge({ planType }: { planType?: string | null }) {
+  const normalized = normalizePlanType(planType);
+  const label = normalized ? normalized.toUpperCase() : "PLAN --";
+  const className =
+    normalized === "plus" || normalized === "pro" || normalized === "team"
+      ? "border-signal-blue/25 bg-blue-50 text-signal-blue"
+      : normalized === "free"
+        ? "border-amber-100 bg-amber-50 text-signal-amber"
+        : "border-line bg-white text-muted";
+
+  return (
+    <span
+      className={`inline-flex shrink-0 items-center rounded-full border px-2 py-0.5 text-[11px] font-black ${className}`}
+      title={planType ? `Plan: ${planType}` : "Plan unknown"}
+    >
+      {label}
+    </span>
+  );
+}
+
+function CompactQuotaMeter({
+  label,
+  quotaWindow,
+  i18n
+}: {
+  label: string;
+  quotaWindow: UpstreamQuotaWindow;
+  i18n: Messages;
+}) {
+  const percent = quotaPercent(quotaWindow);
+  const resetAt = quotaWindow.resetAt ? formatDate(quotaWindow.resetAt) : "--";
+  const quotaText = percent !== null ? `${percent}% ${i18n.importPage.used}` : i18n.importPage.quotaUnknownLabel;
+
+  return (
+    <div className="rounded-control border border-line/80 bg-white/80 px-2.5 py-2">
+      <div className="mb-1.5 flex items-center justify-between gap-3 text-xs">
+        <span className="truncate font-black text-ink" title={label}>
+          {label}
+        </span>
+        <span className={`shrink-0 font-black ${compactQuotaTextClass(percent, quotaWindow.limitReached)}`}>{quotaText}</span>
+      </div>
+      <div className="h-1.5 overflow-hidden rounded-full bg-line/70">
+        <div className={`h-full rounded-full transition-all ${compactQuotaBarClass(percent, quotaWindow.limitReached)}`} style={{ width: `${percent ?? 0}%` }} />
+      </div>
+      <div className="mt-1.5 grid grid-cols-[54px_minmax(0,1fr)] items-center gap-2 text-[11px] leading-4 text-muted">
+        <span className="shrink-0">{i18n.importPage.resetAt}</span>
+        <span className="min-w-0 truncate text-right font-mono tabular-nums" title={resetAt}>
+          {resetAt}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function CompactIconButton({
+  children,
+  disabled,
+  onClick,
+  title,
+  danger = false
+}: {
+  children: ReactNode;
+  disabled: boolean;
+  onClick: () => void;
+  title: string;
+  danger?: boolean;
+}) {
+  return (
+    <button
+      className={[
+        "grid size-7 place-items-center rounded-control border border-transparent text-muted transition hover:border-hub-100 hover:bg-hub-50 hover:text-hub-700 disabled:cursor-not-allowed disabled:opacity-40",
+        danger ? "hover:border-red-100 hover:bg-red-50 hover:text-signal-red" : ""
+      ].join(" ")}
+      type="button"
+      disabled={disabled}
+      onClick={onClick}
+      title={title}
+    >
+      {children}
+    </button>
+  );
+}
+
+function InfoRow({ label, value, muted = false }: { label: string; value: string; muted?: boolean }) {
+  return (
+    <div className="grid min-h-5 grid-cols-[88px_minmax(0,1fr)] items-start gap-2 text-xs leading-5">
+      <span className="shrink-0 text-muted">{label}</span>
+      <span
+        className={`min-w-0 break-words text-right font-mono tabular-nums ${muted ? "text-muted" : "font-black text-ink"}`}
+        title={value}
+      >
+        {value}
+      </span>
+    </div>
   );
 }
 
@@ -372,77 +389,17 @@ function SummaryTile({ label, value, tone }: { label: string; value: number; ton
         ? "bg-red-50 text-signal-red"
         : "bg-slate-100 text-muted";
   return (
-    <div className={`rounded-[18px] px-3 py-2 ${toneClass}`}>
-      <div className="text-xl font-black leading-none">{value}</div>
-      <div className="mt-1 text-[11px] font-extrabold">{label}</div>
+    <div className={`rounded-control border border-white/60 px-3 py-2 ${toneClass}`}>
+      <div className="font-display text-xl font-black leading-none">{value}</div>
+      <div className="mt-1 text-[11px] font-black">{label}</div>
     </div>
   );
 }
 
-function QuotaBucket({
-  label,
-  quotaWindow,
-  i18n,
-  tone
-}: {
-  label: string;
-  quotaWindow: UpstreamQuotaWindow;
-  i18n: Messages;
-  tone: "primary" | "secondary" | "review" | "additional";
-}) {
-  const percent = quotaPercent(quotaWindow);
-  const barClass = quotaBarClass(percent, quotaWindow.limitReached, tone);
-  const percentClass = quotaPercentClass(percent, quotaWindow.limitReached, tone);
-  const resetAt = quotaWindow.resetAt ? formatDate(quotaWindow.resetAt) : null;
-  const windowDuration = formatWindowDuration(quotaWindow.limitWindowSeconds);
-  const secondaryRateLimit = (quotaWindow as UpstreamQuotaLimitBucket).secondaryRateLimit;
-
-  return (
-    <div className="rounded-[14px] border border-slate-200 bg-white px-3 py-2">
-      <div className="mb-1.5 flex items-center justify-between gap-3 text-[11px]">
-        <span className="min-w-0 truncate font-black text-ink" title={label}>
-          {label}
-          {windowDuration ? <span className="ml-1 font-extrabold text-muted">({windowDuration})</span> : null}
-        </span>
-        <span className={`shrink-0 font-black ${percentClass}`}>
-          {quotaWindow.limitReached
-            ? i18n.importPage.limitReached
-            : percent !== null
-              ? `${percent}% ${i18n.importPage.used}`
-              : quotaWindow.allowed === false
-                ? i18n.common.disabled
-                : i18n.importPage.quotaOk}
-        </span>
-      </div>
-      {percent !== null ? (
-        <div className="h-2 overflow-hidden rounded-full bg-slate-100">
-          <div className={`h-full rounded-full transition-all ${barClass}`} style={{ width: `${percent}%` }} />
-        </div>
-      ) : null}
-      {resetAt ? (
-        <p className="m-0 mt-1 text-[11px] leading-4 text-muted">
-          {i18n.importPage.resetAt}: {resetAt}
-        </p>
-      ) : null}
-      {secondaryRateLimit ? (
-        <div className="mt-2 border-l border-slate-200 pl-2">
-          <QuotaBucket
-            label={i18n.importPage.secondaryRateLimit}
-            quotaWindow={secondaryRateLimit}
-            i18n={i18n}
-            tone="secondary"
-          />
-        </div>
-      ) : null}
-    </div>
-  );
-}
-
-function deriveStatus(account: UpstreamAccount, i18n: Messages) {
+function deriveCompactStatus(account: UpstreamAccount, i18n: Messages) {
   if (!account.enabled) {
     return {
       label: i18n.common.disabled,
-      icon: <WifiOff size={12} />,
       className: "border-slate-200 bg-slate-100 text-muted"
     };
   }
@@ -450,44 +407,21 @@ function deriveStatus(account: UpstreamAccount, i18n: Messages) {
   if (account.lastProbeOk === true) {
     return {
       label: i18n.importPage.healthy,
-      icon: <ShieldCheck size={12} />,
-      className: "border-hub-100 bg-hub-50 text-hub-600"
+      className: "border-hub-100 bg-hub-50 text-hub-700"
     };
   }
 
   if (account.lastProbeOk === false) {
     return {
       label: i18n.importPage.failed,
-      icon: <WifiOff size={12} />,
       className: "border-red-100 bg-red-50 text-signal-red"
     };
   }
 
   return {
     label: i18n.importPage.untested,
-    icon: <RadioTower size={12} />,
     className: "border-amber-100 bg-amber-50 text-signal-amber"
   };
-}
-
-function quotaLabel(status: string | undefined, i18n: Messages): string {
-  if (status === "available") {
-    return i18n.importPage.quotaAvailableLabel;
-  }
-  if (status === "limited") {
-    return i18n.importPage.quotaLimitedLabel;
-  }
-  return i18n.importPage.quotaUnknownLabel;
-}
-
-function quotaTone(status: string | undefined): string {
-  if (status === "available") {
-    return "bg-hub-50 text-hub-600";
-  }
-  if (status === "limited") {
-    return "bg-red-50 text-signal-red";
-  }
-  return "bg-slate-100 text-muted";
 }
 
 function legacyQuotaWindow(quota: UpstreamAccount["quota"]): UpstreamQuotaWindow | null {
@@ -503,6 +437,62 @@ function legacyQuotaWindow(quota: UpstreamAccount["quota"]): UpstreamQuotaWindow
   };
 }
 
+function compactQuotaMeters(quota: UpstreamAccount["quota"], i18n: Messages): Array<{ id: string; label: string; quotaWindow: UpstreamQuotaWindow }> {
+  if (!quota?.supported) {
+    return [];
+  }
+
+  const meters: Array<{ id: string; label: string; quotaWindow: UpstreamQuotaWindow }> = [];
+  const primaryQuota = quota.rateLimit ?? legacyQuotaWindow(quota);
+  if (primaryQuota) {
+    meters.push({
+      id: "primary",
+      label: quotaWindowLabel(i18n.importPage.providerQuota, primaryQuota),
+      quotaWindow: primaryQuota
+    });
+  }
+  if (quota.secondaryRateLimit) {
+    meters.push({
+      id: "secondary",
+      label: quotaWindowLabel(i18n.importPage.secondaryRateLimit, quota.secondaryRateLimit),
+      quotaWindow: quota.secondaryRateLimit
+    });
+  }
+  if (quota.codeReviewRateLimit) {
+    meters.push({
+      id: "code-review",
+      label: quotaWindowLabel(i18n.importPage.codeReviewRateLimit, quota.codeReviewRateLimit),
+      quotaWindow: quota.codeReviewRateLimit
+    });
+  }
+  for (const item of quota.additionalRateLimits ?? []) {
+    meters.push({
+      id: `additional-${item.id}`,
+      label: quotaWindowLabel(limitBucketLabel(item), item),
+      quotaWindow: item
+    });
+    if (item.secondaryRateLimit) {
+      meters.push({
+        id: `additional-${item.id}-secondary`,
+        label: quotaWindowLabel(`${limitBucketLabel(item)} secondary`, item.secondaryRateLimit),
+        quotaWindow: item.secondaryRateLimit
+      });
+    }
+  }
+
+  return meters;
+}
+
+function quotaWindowLabel(label: string, quotaWindow: UpstreamQuotaWindow): string {
+  const duration = formatWindowDuration(quotaWindow.limitWindowSeconds);
+  return duration ? `${label} (${duration})` : label;
+}
+
+function limitBucketLabel(bucket: { id?: string | null; name?: string | null }): string {
+  const label = (bucket.name || bucket.id || "").trim();
+  return label ? label.replace(/_/g, " ") : "limit";
+}
+
 function quotaPercent(quotaWindow: UpstreamQuotaWindow): number | null {
   if (quotaWindow.limitReached) {
     return 100;
@@ -513,96 +503,32 @@ function quotaPercent(quotaWindow: UpstreamQuotaWindow): number | null {
   return Math.min(100, Math.max(0, Math.round(quotaWindow.usedPercent)));
 }
 
-function quotaBarClass(
-  percent: number | null,
-  limitReached: boolean | undefined,
-  tone: "primary" | "secondary" | "review" | "additional"
-): string {
-  if (limitReached || (percent ?? 0) >= 90) {
-    return "bg-signal-red";
-  }
-  if ((percent ?? 0) >= 60) {
-    return "bg-signal-amber";
-  }
-  if (tone === "secondary") {
-    return "bg-signal-blue";
-  }
-  if (tone === "review") {
-    return "bg-[#18a0a8]";
-  }
-  if (tone === "additional") {
-    return "bg-[#5b8def]";
-  }
-  return "bg-hub-500";
-}
-
-function quotaPercentClass(
-  percent: number | null,
-  limitReached: boolean | undefined,
-  tone: "primary" | "secondary" | "review" | "additional"
-): string {
+function compactQuotaTextClass(percent: number | null, limitReached: boolean | undefined): string {
   if (limitReached || (percent ?? 0) >= 90) {
     return "text-signal-red";
   }
   if ((percent ?? 0) >= 60) {
     return "text-signal-amber";
   }
-  if (tone === "secondary") {
-    return "text-signal-blue";
-  }
-  if (tone === "review") {
-    return "text-[#0f7d84]";
-  }
-  if (tone === "additional") {
-    return "text-[#315fb9]";
-  }
   return "text-hub-600";
 }
 
-function normalizedLimitName(value: string | null | undefined): string {
-  return (value ?? "").trim().toLowerCase().replace(/[-\s]+/g, "_");
-}
-
-function isReviewLimitName(value: string | null | undefined): boolean {
-  const normalized = normalizedLimitName(value);
-  return (
-    normalized === "review" ||
-    normalized === "code_review" ||
-    normalized === "codex_review" ||
-    normalized === "codex_code_review" ||
-    normalized.includes("code_review") ||
-    normalized.includes("codex_review")
-  );
-}
-
-function visibleAdditionalRateLimits(buckets: UpstreamQuotaLimitBucket[]): UpstreamQuotaLimitBucket[] {
-  return buckets
-    .filter((bucket) => {
-      const id = normalizedLimitName(bucket.id);
-      if (!id || id === "codex") {
-        return false;
-      }
-      return !isReviewLimitName(bucket.id) && !isReviewLimitName(bucket.name);
-    })
-    .sort((left, right) => limitBucketLabel(left).localeCompare(limitBucketLabel(right)));
-}
-
-function limitBucketLabel(bucket: UpstreamQuotaLimitBucket): string {
-  const label = (bucket.name || bucket.id || "").trim();
-  return label ? label.replace(/_/g, " ") : "limit";
-}
-
-function formatProbe(account: UpstreamAccount, i18n: Messages): string {
-  if (!account.lastProbeAt) {
-    return i18n.importPage.neverChecked;
+function compactQuotaBarClass(percent: number | null, limitReached: boolean | undefined): string {
+  if (limitReached || (percent ?? 0) >= 90) {
+    return "bg-signal-red";
   }
+  if ((percent ?? 0) >= 60) {
+    return "bg-signal-amber";
+  }
+  return "bg-hub-500";
+}
 
-  const status = account.lastProbeStatusCode ? `${i18n.importPage.responseStatus} ${account.lastProbeStatusCode}` : "";
-  const latency =
-    typeof account.lastProbeLatencyMs === "number"
-      ? `${i18n.importPage.latency} ${account.lastProbeLatencyMs}ms`
-      : "";
-  return [formatDate(account.lastProbeAt), status, latency].filter(Boolean).join(" · ");
+function normalizePlanType(value: string | null | undefined): string | null {
+  const normalized = value?.trim().toLowerCase();
+  if (!normalized || normalized === "unknown plan") {
+    return null;
+  }
+  return normalized;
 }
 
 function formatDate(value: string): string {
@@ -634,6 +560,29 @@ function formatNumber(value: number): string {
   return new Intl.NumberFormat().format(value);
 }
 
-function formatOptionalNumber(value: number | null | undefined): string {
-  return typeof value === "number" ? formatNumber(value) : "-";
+function formatDecimal(value: number): string {
+  return new Intl.NumberFormat(undefined, {
+    maximumFractionDigits: value >= 10 ? 1 : 2
+  }).format(Number.isFinite(value) ? value : 0);
+}
+
+function formatTokenAmount(value: number, compact = false): string {
+  const normalized = Number.isFinite(value) ? value : 0;
+  if (!compact || Math.abs(normalized) < 10_000) {
+    return `${new Intl.NumberFormat(undefined, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }).format(normalized)} Token`;
+  }
+
+  const units = [
+    { value: 1_000_000_000, suffix: "B" },
+    { value: 1_000_000, suffix: "M" },
+    { value: 1_000, suffix: "K" }
+  ];
+  const unit = units.find((item) => Math.abs(normalized) >= item.value) ?? units.at(-1)!;
+  return `${new Intl.NumberFormat(undefined, {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  }).format(normalized / unit.value)}${unit.suffix} Token`;
 }

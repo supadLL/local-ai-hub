@@ -33,6 +33,8 @@ import {
   type OpenAICompatibleEndpoint
 } from "../services/openai-proxy.js";
 import { createUnknownQuotaSnapshot, quotaSnapshotFromHeaders } from "../services/upstream-status.js";
+import { applyRecordedUsage, extractTokenUsage, usageUnitsFromDetails } from "../services/usage.js";
+import type { UsageStatsStore } from "../services/usage-stats.js";
 import type { UpstreamSelector } from "../services/upstreams.js";
 import type { FileStore } from "../store/file-store.js";
 import type {
@@ -40,6 +42,7 @@ import type {
   ClientKey,
   ForwardedResult,
   ProxyPreparation,
+  TokenUsageDetails,
   UpstreamAccount
 } from "../types.js";
 
@@ -264,9 +267,61 @@ async function readStreamBody(body: ReadableStream<Uint8Array> | null): Promise<
   }
 }
 
+function usageFromSseBlock(block: string): TokenUsageDetails | undefined {
+  const dataLines: string[] = [];
+  for (const rawLine of block.split("\n")) {
+    const line = rawLine.endsWith("\r") ? rawLine.slice(0, -1) : rawLine;
+    if (line.startsWith("data:")) {
+      dataLines.push(line.slice(5).trimStart());
+    }
+  }
+
+  const raw = dataLines.join("\n").trim();
+  if (!raw || raw === "[DONE]") {
+    return undefined;
+  }
+
+  try {
+    return extractTokenUsage(JSON.parse(raw) as unknown);
+  } catch {
+    return undefined;
+  }
+}
+
+function collectUsageFromStreamText(
+  text: string,
+  onUsage: (usage: TokenUsageDetails) => void,
+  flush = false
+): string {
+  let buffer = text;
+  while (true) {
+    const separator = buffer.indexOf("\n\n");
+    if (separator < 0) {
+      break;
+    }
+    const block = buffer.slice(0, separator);
+    buffer = buffer.slice(separator + 2);
+    const usage = usageFromSseBlock(block);
+    if (usage) {
+      onUsage(usage);
+    }
+  }
+
+  if (flush && buffer.trim()) {
+    const usage = usageFromSseBlock(buffer);
+    if (usage) {
+      onUsage(usage);
+    }
+    return "";
+  }
+
+  return buffer;
+}
+
 async function pipeWebStreamToResponse(
   body: ReadableStream<Uint8Array> | null,
-  res: express.Response
+  res: express.Response,
+  onUsage?: (usage: TokenUsageDetails) => void
 ): Promise<void> {
   if (!body) {
     res.end();
@@ -274,14 +329,24 @@ async function pipeWebStreamToResponse(
   }
 
   const reader = body.getReader();
+  const decoder = new TextDecoder();
+  let sseBuffer = "";
   while (true) {
     const { done, value } = await reader.read();
     if (done) {
       break;
     }
     if (value && value.byteLength > 0) {
+      if (onUsage) {
+        sseBuffer += decoder.decode(value, { stream: true }).replace(/\r\n/g, "\n");
+        sseBuffer = collectUsageFromStreamText(sseBuffer, onUsage);
+      }
       res.write(Buffer.from(value));
     }
+  }
+  if (onUsage) {
+    sseBuffer += decoder.decode().replace(/\r\n/g, "\n");
+    collectUsageFromStreamText(sseBuffer, onUsage, true);
   }
   res.end();
 }
@@ -365,6 +430,7 @@ async function forwardProviderRequest(
       responseHeaders: forwardedStream.responseHeaders,
       body: openAIEndpointBodyFromCodex(endpoint, collected, resolveCodexModel(String(body.model))),
       usageUnits: collected.usageUnits,
+      usage: collected.usage,
       upstreamModel: typeof codexRequest.model === "string" ? codexRequest.model : undefined
     }
   };
@@ -372,6 +438,7 @@ async function forwardProviderRequest(
 
 async function recordSuccessfulProxy(
   store: FileStore,
+  usageStats: UsageStatsStore,
   prep: ProxyPreparation,
   forwarded: ForwardedResult,
   model: string,
@@ -388,9 +455,7 @@ async function recordSuccessfulProxy(
 
     const upstream = state.upstreams.find((item) => item.id === prep.upstream.id);
     if (upstream) {
-      upstream.requestCount = (upstream.requestCount ?? 0) + 1;
-      upstream.usedQuota = (upstream.usedQuota ?? 0) + forwarded.usageUnits;
-      upstream.lastUsedAt = completedAt;
+      applyRecordedUsage(upstream, forwarded.usage, forwarded.usageUnits, completedAt);
       upstream.consecutiveFailures = 0;
       upstream.cooldownUntil = null;
       upstream.lastErrorCategory = null;
@@ -414,15 +479,19 @@ async function recordSuccessfulProxy(
           : `Forwarded ${model} through ${prep.upstream.name}.`,
         {
           upstreamModel: forwarded.upstreamModel,
+          ...(forwarded.usage ? { usage: forwarded.usage } : {}),
           ...appendAttempts(attempts)
         }
       )
     );
+
+    usageStats.recordSnapshot(state);
   });
 }
 
 async function handleOpenAICompatibleStream(
   store: FileStore,
+  usageStats: UsageStatsStore,
   endpoint: OpenAICompatibleEndpoint,
   preparations: ProxyPreparation[],
   model: string,
@@ -456,25 +525,33 @@ async function handleOpenAICompatibleStream(
 
       if (forwarded.statusCode < 400) {
         const latencyMs = Date.now() - startedAt;
+        let streamUsage: TokenUsageDetails | undefined;
+        const captureUsage = (usage: TokenUsageDetails) => {
+          streamUsage = usage;
+        };
         applyPassthroughHeaders(res, forwarded);
         res.status(forwarded.statusCode);
         if (prep.upstream.provider === "openai-oauth" && endpoint === "/v1/chat/completions") {
           res.setHeader("content-type", "text/event-stream; charset=utf-8");
           await writeTextChunksToResponse(
-            streamCodexToChatCompletionSSE(streamResultToResponse(forwarded), resolveCodexModel(model)),
+            streamCodexToChatCompletionSSE(streamResultToResponse(forwarded), resolveCodexModel(model), {
+              onUsage: captureUsage
+            }),
             res
           );
         } else {
-          await pipeWebStreamToResponse(forwarded.body, res);
+          await pipeWebStreamToResponse(forwarded.body, res, captureUsage);
         }
         await recordSuccessfulProxy(
           store,
+          usageStats,
           prep,
           {
             statusCode: forwarded.statusCode,
             responseHeaders: forwarded.responseHeaders,
             body: {},
-            usageUnits: 1
+            usageUnits: usageUnitsFromDetails(streamUsage),
+            ...(streamUsage ? { usage: streamUsage } : {})
           },
           model,
           latencyMs,
@@ -560,6 +637,7 @@ async function handleOpenAICompatibleStream(
 
 async function handleOpenAICompatiblePost(
   store: FileStore,
+  usageStats: UsageStatsStore,
   selector: UpstreamSelector,
   endpoint: OpenAICompatibleEndpoint,
   req: express.Request,
@@ -620,7 +698,7 @@ async function handleOpenAICompatiblePost(
     }
 
     if (body.stream === true) {
-      await handleOpenAICompatibleStream(store, endpoint, preparations, model, requestId, body, startedAt, res);
+      await handleOpenAICompatibleStream(store, usageStats, endpoint, preparations, model, requestId, body, startedAt, res);
       return;
     }
 
@@ -681,6 +759,7 @@ async function handleOpenAICompatiblePost(
     if (successfulResult) {
       await recordSuccessfulProxy(
         store,
+        usageStats,
         successfulResult.prep,
         successfulResult.forwarded,
         model,
@@ -746,6 +825,7 @@ function anthropicError(type: string, message: string): Record<string, unknown> 
 
 async function handleAnthropicMessagesPost(
   store: FileStore,
+  usageStats: UsageStatsStore,
   selector: UpstreamSelector,
   req: express.Request,
   res: express.Response,
@@ -839,20 +919,27 @@ async function handleAnthropicMessagesPost(
         applyPassthroughHeaders(res, forwarded);
 
         if (body.stream === true) {
+          let streamUsage: TokenUsageDetails | undefined;
           res.status(forwarded.statusCode);
           res.setHeader("content-type", "text/event-stream; charset=utf-8");
           await writeTextChunksToResponse(
-            streamCodexToAnthropicSSE(streamResultToResponse(forwarded), resolveCodexModel(model), wantThinking),
+            streamCodexToAnthropicSSE(streamResultToResponse(forwarded), resolveCodexModel(model), wantThinking, {
+              onUsage: (usage) => {
+                streamUsage = usage;
+              }
+            }),
             res
           );
           await recordSuccessfulProxy(
             store,
+            usageStats,
             prep,
             {
               statusCode: forwarded.statusCode,
               responseHeaders: forwarded.responseHeaders,
               body: {},
-              usageUnits: 1,
+              usageUnits: usageUnitsFromDetails(streamUsage),
+              ...(streamUsage ? { usage: streamUsage } : {}),
               upstreamModel: codexRequest.model
             },
             model,
@@ -866,12 +953,14 @@ async function handleAnthropicMessagesPost(
         const responseBody = codexToAnthropicBody(collected, resolveCodexModel(model), wantThinking);
         await recordSuccessfulProxy(
           store,
+          usageStats,
           prep,
           {
             statusCode: forwarded.statusCode,
             responseHeaders: forwarded.responseHeaders,
             body: responseBody,
             usageUnits: collected.usageUnits,
+            usage: collected.usage,
             upstreamModel: codexRequest.model
           },
           model,
@@ -947,7 +1036,11 @@ async function handleAnthropicMessagesPost(
   res.status(502).json(anthropicError("api_error", buildNetworkErrorResponse(attempts).error.message));
 }
 
-export function createProxyRouter(store: FileStore, selector: UpstreamSelector): express.Router {
+export function createProxyRouter(
+  store: FileStore,
+  selector: UpstreamSelector,
+  usageStats: UsageStatsStore
+): express.Router {
   const router = express.Router();
 
   router.get("/v1/models", async (_req, res, next) => {
@@ -981,15 +1074,15 @@ export function createProxyRouter(store: FileStore, selector: UpstreamSelector):
   });
 
   router.post("/v1/chat/completions", (req, res, next) => {
-    void handleOpenAICompatiblePost(store, selector, "/v1/chat/completions", req, res, next).catch(next);
+    void handleOpenAICompatiblePost(store, usageStats, selector, "/v1/chat/completions", req, res, next).catch(next);
   });
 
   router.post("/v1/responses", (req, res, next) => {
-    void handleOpenAICompatiblePost(store, selector, "/v1/responses", req, res, next).catch(next);
+    void handleOpenAICompatiblePost(store, usageStats, selector, "/v1/responses", req, res, next).catch(next);
   });
 
   router.post("/v1/messages", (req, res, next) => {
-    void handleAnthropicMessagesPost(store, selector, req, res, next).catch(next);
+    void handleAnthropicMessagesPost(store, usageStats, selector, req, res, next).catch(next);
   });
 
   return router;
