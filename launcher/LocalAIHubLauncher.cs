@@ -1,12 +1,15 @@
 using System;
 using System.Diagnostics;
+using System.Drawing;
 using System.IO;
 using System.IO.Compression;
 using System.Net;
 using System.Net.Sockets;
 using System.Reflection;
+using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
+using System.Windows.Forms;
 
 internal static class LocalAIHubLauncher
 {
@@ -18,6 +21,7 @@ internal static class LocalAIHubLauncher
     private const string DefaultBuildVersion = "dev";
 
     private static Process serverProcess;
+    private static DesktopStatusForm statusForm;
 
     private sealed class NodeRuntime
     {
@@ -33,24 +37,19 @@ internal static class LocalAIHubLauncher
         public string Url;
     }
 
+    [STAThread]
     public static int Main(string[] args)
     {
-        try
+        EnableModernTls();
+        Application.EnableVisualStyles();
+        Application.SetCompatibleTextRenderingDefault(false);
+
+        using (DesktopStatusForm form = new DesktopStatusForm(args))
         {
-            EnableModernTls();
-            return Run(args);
-        }
-        catch (Exception ex)
-        {
-            StopServer();
-            Console.ForegroundColor = ConsoleColor.Red;
-            Console.WriteLine("[Local AI Hub] Startup failed.");
-            Console.ResetColor();
-            Console.WriteLine(ex.Message);
-            Console.WriteLine();
-            Console.WriteLine("Press any key to close this window.");
-            Console.ReadKey(true);
-            return 1;
+            statusForm = form;
+            Application.Run(form);
+            statusForm = null;
+            return form.ExitCode;
         }
     }
 
