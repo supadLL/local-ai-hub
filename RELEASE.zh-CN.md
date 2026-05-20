@@ -71,11 +71,11 @@ Release 附件只保留这些可下载运行的版本包，不再额外上传 `l
 ## 用户侧使用方式
 
 1. 打开 GitHub Releases。
-2. Windows 下载 `LocalAIHub-v26.1.1.1-win-x64.exe`，双击运行。
+2. Windows 下载 `LocalAIHub-v26.1.1.1-win-x64.exe`，双击后以桌面应用窗口运行。
 3. Linux 下载 `LocalAIHub-v26.1.1.1-linux-x86_64.AppImage` 直接运行，或下载对应架构 `.tar.gz` 后运行 `./LocalAIHub.sh`。
 4. macOS 下载对应架构 `.dmg` 或 `.zip`，解压后双击 `LocalAIHub.command`。
 5. Docker 使用 GHCR 镜像，或下载 `LocalAIHub-v26.1.1.1-docker-image.tar.gz` 后 `docker load`。
-6. 浏览器打开 `http://127.0.0.1:4100` 后开始使用。
+6. Windows 会自动打开桌面应用窗口；Linux/macOS/Docker 可按包内提示或浏览器访问本地地址开始使用。
 
 EXE 单独运行时默认把项目安装到：
 

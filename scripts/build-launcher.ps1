@@ -22,7 +22,9 @@ if (-not $csc) {
 
 $refs = @(
   "/reference:System.IO.Compression.dll",
-  "/reference:System.IO.Compression.FileSystem.dll"
+  "/reference:System.IO.Compression.FileSystem.dll",
+  "/reference:System.Drawing.dll",
+  "/reference:System.Windows.Forms.dll"
 )
 
 $version = if ($env:LAH_BUILD_VERSION) { $env:LAH_BUILD_VERSION } else { "dev" }
@@ -56,7 +58,7 @@ using System.Reflection;
 Write-Host "Compiling LocalAIHub.exe..."
 Write-Host "Version: $version"
 Write-Host "Source archive: $sourceArchiveUrl"
-& $csc /nologo /target:exe /platform:anycpu /optimize+ /out:$output $refs $source $generated
+& $csc /nologo /target:winexe /platform:anycpu /optimize+ /out:$output $refs $source $generated
 if ($LASTEXITCODE -ne 0) {
   throw "csc.exe failed with exit code $LASTEXITCODE"
 }

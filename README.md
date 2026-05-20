@@ -6,7 +6,18 @@ Local AI Hub is a local-first OpenAI-compatible gateway for personal use. It let
 
 The project is intentionally small and self-contained: an Express/TypeScript backend, a React/Tailwind frontend, and a local JSON state store. It is designed for local development and personal workstation workflows, not as a public multi-tenant service.
 
-## Features
+## At a Glance
+
+| Icon | Area | What it gives you |
+| --- | --- | --- |
+| 🖥️ | Desktop App | Windows users can launch `LocalAIHub.exe` as a desktop-style app window. |
+| 🔐 | Local-first | Credentials and state stay on your machine under `.env` and `data/state.json`. |
+| 🔁 | API Gateway | Exposes OpenAI-compatible local endpoints such as `/v1/chat/completions`, `/v1/responses`, and `/v1/messages`. |
+| 🧭 | Account Routing | Health checks, quota signals, cooldowns, and failover help choose usable upstream accounts. |
+| 📊 | Usage Insight | Shows request count, token usage, cache hit tokens, quota windows, and reset times. |
+| 🔌 | Tool Import | Generates `ccswitch://` imports for Codex, Claude Code, and Gemini profiles. |
+
+## What You Get
 
 - Import upstream accounts with an API-key form, batch JSON, or the local OpenAI OAuth flow.
 - Issue local client keys with model allowlists, per-minute request limits, and quota caps.
@@ -19,7 +30,29 @@ The project is intentionally small and self-contained: an Express/TypeScript bac
 - Show sanitized upstream account status without returning raw upstream secrets to the browser.
 - Probe upstream account health and discovered model lists.
 - Import generated local keys into CCSwitch through a configurable `ccswitch://` launch dialog.
-- Provide a broad GPT model catalog, including GPT-5.5, GPT-5.4, GPT-5.3 Codex, GPT-5.2, GPT-5, GPT-4.1, GPT-4o, GPT-4, GPT-3.5, GPT-3 base replacements, image models, and GPT-OSS IDs.
+- Provide a focused GPT model catalog with mainstream GPT-5, GPT-4, GPT-4o, GPT-4.1, GPT-3.5, mini, turbo, and Codex variants.
+
+## Console Map
+
+| Icon | Page | Main job |
+| --- | --- | --- |
+| 🔐 | Account Import | Add API-key accounts, batch JSON, or OpenAI OAuth accounts. Login actions stay as buttons and open focused modal cards. |
+| 🧭 | Account Status | Surface usable accounts first, including health, plan, quota windows, reset times, and cooldown signals. |
+| 📊 | Usage Stats | Use compact account cards to show request totals, token totals, input/output split, cache hit tokens, and quota percentages. |
+| 🔑 | Local Keys | Create local client keys with quota, RPM limits, and a focused mainstream model allowlist. |
+| 🔌 | CCSwitch Import | Generate Codex, Claude Code, or Gemini provider profiles from a local key. |
+
+## Desktop App Experience
+
+The Windows launcher is now a desktop-app style entry point:
+
+1. Double-click `LocalAIHub.exe`.
+2. A compact preparation window appears while dependencies, build output, and the local runtime are checked.
+3. The local service starts in the background.
+4. Local AI Hub opens in a dedicated desktop app window.
+5. Closing that app window stops the service that was started by the EXE.
+
+This keeps the familiar web UI while removing the old "black console window + browser tab" workflow for normal Windows users.
 
 ## Current Scope
 
@@ -37,7 +70,7 @@ The project is intentionally small and self-contained: an Express/TypeScript bac
 
 ## Quick Start
 
-### Windows one-click launcher
+### 🖥️ Platform Packages
 
 Download the matching artifact from GitHub Releases:
 
@@ -46,15 +79,26 @@ Download the matching artifact from GitHub Releases:
 - macOS: `LocalAIHub-v26.1.1.1-mac-x64.dmg`, `LocalAIHub-v26.1.1.1-mac-arm64.dmg`, or the matching `.zip`
 - Docker: `LocalAIHub-v26.1.1.1-docker-image.tar.gz` or `ghcr.io/supadll/local-ai-hub:v26.1.1.1`
 
-Run it from any local folder, or run the same launcher from the project root during development. On the first run it will create `.env` from `.env.example`, use an existing Node.js 20+ installation or download a portable Node.js runtime, install npm dependencies, build the app, start the service, and open `http://127.0.0.1:4100`.
+Platform behavior:
+
+| Icon | Platform | Run experience |
+| --- | --- | --- |
+| 🪟 | Windows | Double-click the EXE. It prepares the app, starts the local service in the background, and opens a desktop-style app window. |
+| 🧱 | Linux | Run the AppImage or `LocalAIHub.sh`. It prepares the app, starts the local service, and opens the local browser URL. |
+| ⌘ | macOS | Run the `.command`, `.dmg`, or `.zip` package. It prepares the app, starts the local service, and opens the local browser URL. |
+| 📦 | Docker | Load or pull the image, run the container, then open the mapped local service URL. |
+
+The Windows EXE can run from any local folder, or from the project root during development. On the first run it creates `.env` from `.env.example`, uses an existing Node.js 20+ installation or downloads a portable Node.js runtime, installs npm dependencies, builds the app, starts the local service, and opens Local AI Hub in a desktop app window.
+
+Linux and macOS launchers follow the same prepare/install/build flow, then open `http://127.0.0.1:4100` in the browser. Keep the launcher terminal open on those platforms while the service is running.
 
 Releases are created from version tags. The first release tag should be `v26.1.1.1`; future releases increment the final number, for example `v26.1.1.2`. Release assets only include runnable platform packages.
 
 When the EXE is launched outside a source checkout, it downloads the matching source archive embedded at build time and installs the app under `%LOCALAPPDATA%\LocalAIHub\app`. Local runtime files stay in `.local-runtime`, while `.env` and `data` are preserved across app updates.
 
-Keep the launcher window open while using Local AI Hub. Press `Ctrl+C` in that window to stop the service.
+On Windows the EXE runs as a desktop app: a small preparation window appears first, then the Local AI Hub app window opens. Closing the app window stops the service started by that EXE.
 
-Useful launcher flags:
+Useful Windows launcher flags:
 
 ```powershell
 .\LocalAIHub.exe --prepare-only
@@ -80,7 +124,7 @@ Chinese step-by-step guides:
 - [DOCKER.zh-CN.md](./DOCKER.zh-CN.md)
 - [RELEASE.zh-CN.md](./RELEASE.zh-CN.md)
 
-### Developer startup
+### 🛠️ Developer Startup
 
 ```bash
 npm install
@@ -118,12 +162,26 @@ See [.env.example](./.env.example).
 
 ## Workflow
 
-1. Start the service.
-2. Open the local console.
-3. Import one or more upstream accounts on the Account Import page.
-4. Run a health check to confirm which accounts are alive and which models are visible.
-5. Create a local client key on the Local Keys page.
-6. Use the local key from a client, CLI, script, or CCSwitch profile.
+1. 🖥️ Start the desktop app or local service.
+2. 🔐 Import one or more upstream accounts on the Account Import page.
+3. 🧪 Run a health check to confirm which accounts are alive and which models are visible.
+4. 🔑 Create a local client key on the Local Keys page.
+5. 📊 Watch local usage, token totals, cache hit tokens, and quota windows.
+6. 🔌 Use the local key from a client, CLI, script, or CCSwitch profile.
+
+## Architecture Snapshot
+
+```text
+Desktop App / Browser UI
+        |
+        v
+Express admin API + local OpenAI-compatible API
+        |
+        +--> Local JSON state store
+        +--> OpenAI-compatible upstream providers
+        +--> OpenAI OAuth / ChatGPT Codex backend
+        +--> CCSwitch import links
+```
 
 ## Importing Upstream Accounts
 
@@ -228,6 +286,15 @@ npm run build
 - The current state store is a local JSON file, not encrypted production secret storage.
 - The web UI intentionally shows masked upstream credentials only.
 - Add authentication and encrypted storage before exposing this beyond your local machine.
+
+## Acknowledgements
+
+Local AI Hub uses and adapts ideas, implementation details, and UI references from the following open-source projects:
+
+- [`icebear0828/codex-proxy`](https://github.com/icebear0828/codex-proxy): Codex/ChatGPT account login flow, Responses API proxying, protocol compatibility ideas, account health/quota handling, token/cache usage concepts, and local desktop gateway experience.
+- [`QuantumNous/new-api`](https://github.com/QuantumNous/new-api): multi-provider gateway concepts, account/channel management patterns, usage statistics presentation, quota display ideas, and admin console organization.
+
+Thanks to the maintainers and contributors of both projects. When redistributing this project or further adapting upstream content, keep the upstream attribution and review the corresponding licenses.
 
 ## License
 

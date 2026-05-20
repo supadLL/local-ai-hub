@@ -6,6 +6,17 @@ Local AI Hub 是一个本地优先、面向个人使用的 OpenAI-compatible 中
 
 这个项目刻意保持轻量：后端是 Express/TypeScript，前端是 React/Tailwind，状态存储是本地 JSON 文件。它适合本机开发、个人工作站和本地工具链联动，不是面向公网的多租户服务。
 
+## 一眼看懂
+
+| 图标 | 模块 | 说明 |
+| --- | --- | --- |
+| 🖥️ | 桌面 App | Windows 用户可以直接双击 `LocalAIHub.exe`，以独立应用窗口使用。 |
+| 🔐 | 本地优先 | 上游凭据、本地 Key、用量状态都保存在本机，不上传到外部服务。 |
+| 🔁 | 本地网关 | 提供 OpenAI-compatible 的 `/v1/chat/completions`、`/v1/responses`、`/v1/messages` 等接口。 |
+| 🧭 | 账号调度 | 支持账号测活、额度窗口、冷却、限额跳过和失败回退。 |
+| 📊 | 用量统计 | 展示请求数、Token 消耗、缓存命中、额度窗口和重置时间。 |
+| 🔌 | 工具导入 | 一键生成 `ccswitch://` 导入链接，给 Codex、Claude Code、Gemini 使用。 |
+
 ## 功能特性
 
 - 通过 API Key 表单、批量 JSON 或本地 OpenAI OAuth 流程导入上游账号。
@@ -19,7 +30,29 @@ Local AI Hub 是一个本地优先、面向个人使用的 OpenAI-compatible 中
 - 前端只展示脱敏后的上游账号状态，不回传真实上游密钥。
 - 支持上游账号测活和模型发现。
 - 支持通过可配置弹窗生成 `ccswitch://` 导入链接，把本地 Key 一键导入 CCSwitch。
-- 内置较完整的 GPT 模型候选目录，包括 GPT-5.5、GPT-5.4、GPT-5.3 Codex、GPT-5.2、GPT-5、GPT-4.1、GPT-4o、GPT-4、GPT-3.5、GPT-3 base 替代模型、图片模型和 GPT-OSS ID。
+- 内置更克制的主流模型候选目录，保留 GPT-5、GPT-4、GPT-4o、GPT-4.1、GPT-3.5、mini、turbo 和 Codex 类型，避免日期版、preview、pro 等模型把下拉框撑乱。
+
+## 控制台地图
+
+| 图标 | 页面 | 重点能力 |
+| --- | --- | --- |
+| 🔐 | 账号导入 | 支持 API Key、批量 JSON、OpenAI OAuth 导入；右侧登录入口只保留按钮，点击后再弹出对应登录卡片。 |
+| 🧭 | 账号状态 | 优先突出账号是否可用、套餐、额度窗口、重置时间、冷却状态和失败回退信息。 |
+| 📊 | 用量统计 | 使用紧凑账号卡片展示请求数、Token 总量、输入/输出拆分、缓存命中和额度百分比。 |
+| 🔑 | 本地 Key | 创建本地客户端 Key，配置额度、RPM 限制和主流模型允许范围。 |
+| 🔌 | CCSwitch 导入 | 基于本地 Key 生成 Codex、Claude Code、Gemini 的 Provider 配置。 |
+
+## 桌面 App 体验
+
+Windows 版启动器已经从“黑窗口 + 浏览器标签页”改成“桌面 App 壳 + 后台本地服务”：
+
+1. 双击 `LocalAIHub.exe`。
+2. 先出现一个小的准备窗口，用来显示依赖安装、构建、启动进度。
+3. 准备完成后自动打开 Local AI Hub 应用窗口。
+4. 用户直接在这个窗口里操作，界面和网页端一致。
+5. 关闭应用窗口后，由这个 EXE 启动的本地服务会自动停止。
+
+这个实现复用了现有 React UI 和本地 API，不需要用户手动打开浏览器，也不需要保留命令行窗口。
 
 ## 当前边界
 
@@ -36,6 +69,30 @@ Local AI Hub 是一个本地优先、面向个人使用的 OpenAI-compatible 中
 - 如果要使用 CCSwitch 一键导入，需要本机已安装并注册 CCSwitch 协议。
 
 ## 快速启动
+
+### 🖥️ 普通用户：下载一键包
+
+从 GitHub Releases 下载对应平台的包：
+
+- Windows：`LocalAIHub-v26.1.1.1-win-x64.exe`
+- Linux：`LocalAIHub-v26.1.1.1-linux-x86_64.AppImage`，或对应架构的 `.tar.gz`
+- macOS：`LocalAIHub-v26.1.1.1-mac-x64.dmg`、`LocalAIHub-v26.1.1.1-mac-arm64.dmg`，或对应 `.zip`
+- Docker：`LocalAIHub-v26.1.1.1-docker-image.tar.gz` 或 `ghcr.io/supadll/local-ai-hub:v26.1.1.1`
+
+平台启动方式：
+
+| 图标 | 平台 | 运行体验 |
+| --- | --- | --- |
+| 🪟 | Windows | 双击 EXE，自动准备环境、后台启动本地服务，并打开独立桌面 App 窗口。 |
+| 🧱 | Linux | 运行 AppImage 或 `LocalAIHub.sh`，自动准备环境并打开本地浏览器地址。 |
+| ⌘ | macOS | 运行 `.command`、`.dmg` 或 `.zip` 包，自动准备环境并打开本地浏览器地址。 |
+| 📦 | Docker | 加载或拉取镜像，启动容器后访问映射出来的本地地址。 |
+
+Windows 用户直接双击 EXE 即可。首次启动会自动准备 Node.js、安装依赖、构建前后端并打开桌面应用窗口。
+
+Linux/macOS 也是一键启动包，但目前不是 Windows 这种独立桌面壳；它们会启动本地服务并打开 `http://127.0.0.1:4100`，使用过程中保持启动终端运行即可。
+
+### 🛠️ 开发者：源码启动
 
 ```bash
 npm install
@@ -73,12 +130,26 @@ npm start
 
 ## 使用流程
 
-1. 启动服务。
-2. 打开本地控制台。
-3. 在“账号导入”页面导入一个或多个上游账号。
-4. 执行测活，确认账号是否可用以及可发现哪些模型。
-5. 在“本地 Key”页面创建客户端 Key。
-6. 在客户端、CLI、脚本或 CCSwitch 中使用这个本地 Key。
+1. 🖥️ 启动桌面 App 或本地服务。
+2. 🔐 在“账号导入”页面导入一个或多个上游账号。
+3. 🧪 执行测活，确认账号是否可用以及可发现哪些模型。
+4. 🔑 在“本地 Key”页面创建客户端 Key。
+5. 📊 在“用量统计”和账号卡片中查看 Token、缓存命中和额度窗口。
+6. 🔌 在客户端、CLI、脚本或 CCSwitch 中使用这个本地 Key。
+
+## 架构速览
+
+```text
+桌面 App / 浏览器 UI
+        |
+        v
+Express 管理 API + 本地 OpenAI-compatible API
+        |
+        +--> 本地 JSON 状态文件
+        +--> OpenAI-compatible 上游 Provider
+        +--> OpenAI OAuth / ChatGPT Codex 后端
+        +--> CCSwitch 导入链接
+```
 
 ## 导入上游账号
 
@@ -208,6 +279,15 @@ npm run build
 - 当前状态存储是本地 JSON 文件，不是生产级加密密钥存储。
 - 前端只展示脱敏后的上游凭据。
 - 如果要暴露到本机之外，请先增加认证、密钥加密和访问控制。
+
+## 鸣谢
+
+Local AI Hub 在实现过程中参考并使用了以下开源项目中的部分思路、实现细节和 UI 展示方式：
+
+- [`icebear0828/codex-proxy`](https://github.com/icebear0828/codex-proxy)：参考了 Codex/ChatGPT 账号登录流程、Responses API 转发、协议兼容思路、账号健康与额度处理、Token/缓存命中统计概念，以及本地桌面网关体验。
+- [`QuantumNous/new-api`](https://github.com/QuantumNous/new-api)：参考了多 Provider 网关设计、账号/渠道管理模式、用量统计展示、额度展示方式，以及管理控制台的信息组织方式。
+
+感谢以上项目的维护者和贡献者。后续分发本项目或继续引入上游内容时，应保留对应鸣谢，并按上游项目许可证要求处理版权与许可声明。
 
 ## License
 

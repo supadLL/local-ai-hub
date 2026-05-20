@@ -21,6 +21,8 @@ internal static class LocalAIHubLauncher
     private const string DefaultBuildVersion = "dev";
 
     private static Process serverProcess;
+    private static Process desktopAppProcess;
+    private static Process activeChildProcess;
     private static DesktopStatusForm statusForm;
 
     private sealed class NodeRuntime
@@ -86,7 +88,6 @@ internal static class LocalAIHubLauncher
             projectRoot = EnsureStandaloneProject(args, forceAppUpdate, noAppUpdate);
         }
 
-        Console.Title = "Local AI Hub";
         WriteHeader("Local AI Hub one-click launcher");
         Console.WriteLine("Project: " + projectRoot);
         Console.WriteLine("Launcher version: " + LauncherVersion());
@@ -126,9 +127,14 @@ internal static class LocalAIHubLauncher
         if (HealthOk(port))
         {
             Console.WriteLine("Local AI Hub is already running at " + url);
-            if (!noOpen)
+            Process app = OpenDesktopApp(url, projectRoot, noOpen);
+            if (app != null)
             {
-                OpenBrowser(url);
+                WaitForDesktopApp(app);
+            }
+            else if (!noOpen)
+            {
+                statusForm.SetReady(url);
             }
             return 0;
         }
@@ -144,17 +150,16 @@ internal static class LocalAIHubLauncher
             throw new InvalidOperationException("Server did not become healthy within 90 seconds. Check the console output above.");
         }
 
-        Console.ForegroundColor = ConsoleColor.Green;
         Console.WriteLine("Local AI Hub is running: " + url);
-        Console.ResetColor();
-        if (!noOpen)
+        Process desktopApp = OpenDesktopApp(url, projectRoot, noOpen);
+        if (desktopApp != null)
         {
-            OpenBrowser(url);
+            WaitForDesktopApp(desktopApp);
+            StopServer();
+            return 0;
         }
 
-        Console.WriteLine();
-        Console.WriteLine("Keep this window open while using Local AI Hub.");
-        Console.WriteLine("Press Ctrl+C to stop the service.");
+        statusForm.SetReady(url);
         serverProcess.WaitForExit();
         return serverProcess.ExitCode;
     }
@@ -200,11 +205,9 @@ internal static class LocalAIHubLauncher
 
     private static void WriteHeader(string text)
     {
-        Console.ForegroundColor = ConsoleColor.Cyan;
         Console.WriteLine("========================================");
         Console.WriteLine(text);
         Console.WriteLine("========================================");
-        Console.ResetColor();
     }
 
     private static string FindProjectRoot()
@@ -875,7 +878,7 @@ internal static class LocalAIHubLauncher
         info.UseShellExecute = false;
         info.RedirectStandardOutput = true;
         info.RedirectStandardError = true;
-        info.CreateNoWindow = false;
+        info.CreateNoWindow = true;
 
         using (Process process = new Process())
         {
@@ -895,9 +898,11 @@ internal static class LocalAIHubLauncher
                 }
             };
             process.Start();
+            activeChildProcess = process;
             process.BeginOutputReadLine();
             process.BeginErrorReadLine();
             process.WaitForExit();
+            activeChildProcess = null;
             return process.ExitCode;
         }
     }
@@ -930,16 +935,38 @@ internal static class LocalAIHubLauncher
         info.Arguments = "dist/index.js";
         info.WorkingDirectory = root;
         info.UseShellExecute = false;
-        info.RedirectStandardOutput = false;
-        info.RedirectStandardError = false;
-        info.CreateNoWindow = false;
+        info.RedirectStandardOutput = true;
+        info.RedirectStandardError = true;
+        info.CreateNoWindow = true;
 
         serverProcess = Process.Start(info);
-        Console.CancelKeyPress += delegate(object sender, ConsoleCancelEventArgs e)
+        serverProcess.OutputDataReceived += delegate(object sender, DataReceivedEventArgs e)
         {
-            e.Cancel = true;
-            StopServer();
+            if (e.Data != null)
+            {
+                Console.WriteLine("[server] " + e.Data);
+            }
         };
+        serverProcess.ErrorDataReceived += delegate(object sender, DataReceivedEventArgs e)
+        {
+            if (e.Data != null)
+            {
+                Console.Error.WriteLine("[server] " + e.Data);
+            }
+        };
+        serverProcess.BeginOutputReadLine();
+        serverProcess.BeginErrorReadLine();
+        try
+        {
+            Console.CancelKeyPress += delegate(object sender, ConsoleCancelEventArgs e)
+            {
+                e.Cancel = true;
+                StopServer();
+            };
+        }
+        catch
+        {
+        }
         AppDomain.CurrentDomain.ProcessExit += delegate { StopServer(); };
     }
 
@@ -947,11 +974,42 @@ internal static class LocalAIHubLauncher
     {
         try
         {
+            if (activeChildProcess != null && !activeChildProcess.HasExited)
+            {
+                activeChildProcess.Kill();
+                activeChildProcess.WaitForExit(5000);
+            }
+        }
+        catch
+        {
+        }
+
+        try
+        {
             if (serverProcess != null && !serverProcess.HasExited)
             {
                 Console.WriteLine("Stopping Local AI Hub...");
                 serverProcess.Kill();
                 serverProcess.WaitForExit(5000);
+            }
+        }
+        catch
+        {
+        }
+    }
+
+    private static void StopDesktopApp()
+    {
+        try
+        {
+            if (desktopAppProcess != null && !desktopAppProcess.HasExited)
+            {
+                desktopAppProcess.CloseMainWindow();
+                if (!desktopAppProcess.WaitForExit(3000))
+                {
+                    desktopAppProcess.Kill();
+                    desktopAppProcess.WaitForExit(5000);
+                }
             }
         }
         catch
@@ -1013,7 +1071,79 @@ internal static class LocalAIHubLauncher
         }
     }
 
-    private static void OpenBrowser(string url)
+    private static Process OpenDesktopApp(string url, string root, bool noOpen)
+    {
+        if (noOpen)
+        {
+            return null;
+        }
+
+        string edge = FindEdge();
+        if (!string.IsNullOrWhiteSpace(edge))
+        {
+            string profile = Path.Combine(root, ".local-runtime", "desktop-profile");
+            Directory.CreateDirectory(profile);
+
+            ProcessStartInfo info = new ProcessStartInfo();
+            info.FileName = edge;
+            info.Arguments =
+                "--app=" + Quote(url) +
+                " --user-data-dir=" + Quote(profile) +
+                " --no-first-run --no-default-browser-check";
+            info.UseShellExecute = false;
+            info.CreateNoWindow = true;
+
+            Console.WriteLine("Opening Local AI Hub desktop app...");
+            desktopAppProcess = Process.Start(info);
+            statusForm.SetAppLaunched(url);
+            return desktopAppProcess;
+        }
+
+        Console.WriteLine("Microsoft Edge was not found. Opening the system browser instead.");
+        OpenBrowserFallback(url);
+        return null;
+    }
+
+    private static void WaitForDesktopApp(Process process)
+    {
+        if (process == null)
+        {
+            return;
+        }
+
+        try
+        {
+            process.WaitForExit();
+            Console.WriteLine("Local AI Hub desktop app closed.");
+        }
+        catch
+        {
+        }
+    }
+
+    private static string FindEdge()
+    {
+        string[] candidates = new string[]
+        {
+            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), "Microsoft", "Edge", "Application", "msedge.exe"),
+            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "Microsoft", "Edge", "Application", "msedge.exe"),
+            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Microsoft", "Edge", "Application", "msedge.exe"),
+            FindOnPath("msedge.exe")
+        };
+
+        for (int i = 0; i < candidates.Length; i++)
+        {
+            string candidate = candidates[i];
+            if (!string.IsNullOrWhiteSpace(candidate) && File.Exists(candidate))
+            {
+                return candidate;
+            }
+        }
+
+        return null;
+    }
+
+    private static void OpenBrowserFallback(string url)
     {
         try
         {
@@ -1025,6 +1155,253 @@ internal static class LocalAIHubLauncher
         catch
         {
             Console.WriteLine("Open this address in your browser: " + url);
+        }
+    }
+
+    private sealed class DesktopStatusForm : Form
+    {
+        private readonly string[] args;
+        private readonly Label statusLabel;
+        private readonly ProgressBar progressBar;
+        private readonly TextBox logBox;
+        private readonly Button stopButton;
+        private Thread worker;
+        private bool allowClose;
+
+        public int ExitCode { get; private set; }
+
+        public DesktopStatusForm(string[] args)
+        {
+            this.args = args;
+            ExitCode = 1;
+
+            Text = "Local AI Hub";
+            StartPosition = FormStartPosition.CenterScreen;
+            MinimumSize = new Size(560, 420);
+            Size = new Size(680, 500);
+            BackColor = Color.FromArgb(246, 252, 249);
+
+            Label titleLabel = new Label();
+            titleLabel.Text = "Local AI Hub";
+            titleLabel.Font = new Font("Segoe UI", 18, FontStyle.Bold);
+            titleLabel.ForeColor = Color.FromArgb(16, 34, 28);
+            titleLabel.AutoSize = true;
+            titleLabel.Location = new Point(24, 22);
+
+            statusLabel = new Label();
+            statusLabel.Text = "Preparing desktop app...";
+            statusLabel.Font = new Font("Segoe UI", 10, FontStyle.Regular);
+            statusLabel.ForeColor = Color.FromArgb(85, 101, 94);
+            statusLabel.AutoSize = false;
+            statusLabel.Location = new Point(27, 61);
+            statusLabel.Size = new Size(610, 24);
+
+            progressBar = new ProgressBar();
+            progressBar.Style = ProgressBarStyle.Marquee;
+            progressBar.MarqueeAnimationSpeed = 28;
+            progressBar.Location = new Point(28, 99);
+            progressBar.Size = new Size(610, 8);
+
+            logBox = new TextBox();
+            logBox.Multiline = true;
+            logBox.ReadOnly = true;
+            logBox.ScrollBars = ScrollBars.Vertical;
+            logBox.BorderStyle = BorderStyle.FixedSingle;
+            logBox.Font = new Font("Consolas", 9, FontStyle.Regular);
+            logBox.BackColor = Color.White;
+            logBox.ForeColor = Color.FromArgb(30, 45, 39);
+            logBox.Location = new Point(28, 126);
+            logBox.Size = new Size(610, 282);
+            logBox.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+
+            stopButton = new Button();
+            stopButton.Text = "Stop and close";
+            stopButton.Font = new Font("Segoe UI", 9, FontStyle.Bold);
+            stopButton.Location = new Point(506, 423);
+            stopButton.Size = new Size(132, 34);
+            stopButton.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
+            stopButton.Click += delegate { RequestExit(); };
+
+            Controls.Add(titleLabel);
+            Controls.Add(statusLabel);
+            Controls.Add(progressBar);
+            Controls.Add(logBox);
+            Controls.Add(stopButton);
+        }
+
+        protected override void OnShown(EventArgs e)
+        {
+            base.OnShown(e);
+            Console.SetOut(new StatusTextWriter(this));
+            Console.SetError(new StatusTextWriter(this));
+
+            worker = new Thread(RunLauncher);
+            worker.IsBackground = true;
+            worker.Start();
+        }
+
+        protected override void OnFormClosing(FormClosingEventArgs e)
+        {
+            if (!allowClose)
+            {
+                allowClose = true;
+                StopDesktopApp();
+                StopServer();
+            }
+            base.OnFormClosing(e);
+        }
+
+        public void AppendLog(string value)
+        {
+            if (IsDisposed)
+            {
+                return;
+            }
+
+            if (InvokeRequired)
+            {
+                BeginInvoke(new Action<string>(AppendLog), value);
+                return;
+            }
+
+            if (logBox.TextLength > 50000)
+            {
+                logBox.Clear();
+            }
+            logBox.AppendText(value);
+        }
+
+        public void SetReady(string url)
+        {
+            if (IsDisposed)
+            {
+                return;
+            }
+
+            if (InvokeRequired)
+            {
+                BeginInvoke(new Action<string>(SetReady), url);
+                return;
+            }
+
+            Show();
+            WindowState = FormWindowState.Normal;
+            statusLabel.Text = "Local AI Hub is running at " + url;
+            progressBar.Style = ProgressBarStyle.Blocks;
+            progressBar.Value = 100;
+        }
+
+        public void SetAppLaunched(string url)
+        {
+            if (IsDisposed)
+            {
+                return;
+            }
+
+            if (InvokeRequired)
+            {
+                BeginInvoke(new Action<string>(SetAppLaunched), url);
+                return;
+            }
+
+            statusLabel.Text = "App window opened. Close the app window to stop Local AI Hub.";
+            Hide();
+        }
+
+        private void RunLauncher()
+        {
+            try
+            {
+                ExitCode = Run(args);
+                CompleteSuccessfully();
+            }
+            catch (Exception ex)
+            {
+                StopServer();
+                ExitCode = 1;
+                AppendLog(Environment.NewLine + "[Local AI Hub] Startup failed." + Environment.NewLine);
+                AppendLog(ex.Message + Environment.NewLine);
+                ShowError(ex.Message);
+            }
+        }
+
+        private void CompleteSuccessfully()
+        {
+            if (IsDisposed)
+            {
+                return;
+            }
+
+            if (InvokeRequired)
+            {
+                BeginInvoke(new Action(CompleteSuccessfully));
+                return;
+            }
+
+            allowClose = true;
+            Close();
+        }
+
+        private void ShowError(string message)
+        {
+            if (IsDisposed)
+            {
+                return;
+            }
+
+            if (InvokeRequired)
+            {
+                BeginInvoke(new Action<string>(ShowError), message);
+                return;
+            }
+
+            Show();
+            WindowState = FormWindowState.Normal;
+            statusLabel.Text = "Startup failed: " + message;
+            progressBar.Style = ProgressBarStyle.Blocks;
+            progressBar.Value = 0;
+            stopButton.Text = "Close";
+        }
+
+        private void RequestExit()
+        {
+            allowClose = true;
+            StopDesktopApp();
+            StopServer();
+            Close();
+        }
+    }
+
+    private sealed class StatusTextWriter : TextWriter
+    {
+        private readonly DesktopStatusForm form;
+
+        public StatusTextWriter(DesktopStatusForm form)
+        {
+            this.form = form;
+        }
+
+        public override Encoding Encoding
+        {
+            get { return Encoding.UTF8; }
+        }
+
+        public override void Write(string value)
+        {
+            if (value != null)
+            {
+                form.AppendLog(value);
+            }
+        }
+
+        public override void WriteLine(string value)
+        {
+            form.AppendLog((value ?? "") + Environment.NewLine);
+        }
+
+        public override void WriteLine()
+        {
+            form.AppendLog(Environment.NewLine);
         }
     }
 

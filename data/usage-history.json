@@ -351,6 +351,461 @@
         "active_accounts": 1,
         "total_accounts": 1
       }
+    },
+    {
+      "timestamp": "2026-05-19T09:29:19.864Z",
+      "totals": {
+        "input_tokens": 1501214,
+        "output_tokens": 7376,
+        "total_tokens": 1508590,
+        "cached_tokens": 201216,
+        "reasoning_tokens": 1144,
+        "request_count": 55,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-19T09:29:58.098Z",
+      "totals": {
+        "input_tokens": 1594679,
+        "output_tokens": 7938,
+        "total_tokens": 1602617,
+        "cached_tokens": 201216,
+        "reasoning_tokens": 1293,
+        "request_count": 56,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-19T09:33:03.468Z",
+      "totals": {
+        "input_tokens": 1688625,
+        "output_tokens": 8000,
+        "total_tokens": 1696625,
+        "cached_tokens": 201216,
+        "reasoning_tokens": 1293,
+        "request_count": 57,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-19T11:03:27.679Z",
+      "totals": {
+        "input_tokens": 1713567,
+        "output_tokens": 8020,
+        "total_tokens": 1721587,
+        "cached_tokens": 201216,
+        "reasoning_tokens": 1293,
+        "request_count": 58,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-19T11:05:14.221Z",
+      "totals": {
+        "input_tokens": 1738756,
+        "output_tokens": 8258,
+        "total_tokens": 1747014,
+        "cached_tokens": 201216,
+        "reasoning_tokens": 1385,
+        "request_count": 59,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-19T11:05:41.446Z",
+      "totals": {
+        "input_tokens": 1764096,
+        "output_tokens": 8474,
+        "total_tokens": 1772570,
+        "cached_tokens": 201216,
+        "reasoning_tokens": 1385,
+        "request_count": 60,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-19T11:08:44.368Z",
+      "totals": {
+        "input_tokens": 1789722,
+        "output_tokens": 8535,
+        "total_tokens": 1798257,
+        "cached_tokens": 201216,
+        "reasoning_tokens": 1398,
+        "request_count": 61,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-20T03:19:57.292Z",
+      "totals": {
+        "input_tokens": 1790044,
+        "output_tokens": 8545,
+        "total_tokens": 1798589,
+        "cached_tokens": 201216,
+        "reasoning_tokens": 1398,
+        "request_count": 62,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-20T03:20:00.186Z",
+      "totals": {
+        "input_tokens": 1815297,
+        "output_tokens": 8595,
+        "total_tokens": 1823892,
+        "cached_tokens": 201216,
+        "reasoning_tokens": 1422,
+        "request_count": 63,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-20T06:17:04.188Z",
+      "totals": {
+        "input_tokens": 1840963,
+        "output_tokens": 8686,
+        "total_tokens": 1849649,
+        "cached_tokens": 201216,
+        "reasoning_tokens": 1422,
+        "request_count": 64,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-20T07:06:01.015Z",
+      "totals": {
+        "input_tokens": 1841256,
+        "output_tokens": 8703,
+        "total_tokens": 1849959,
+        "cached_tokens": 201216,
+        "reasoning_tokens": 1422,
+        "request_count": 65,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-20T07:06:07.222Z",
+      "totals": {
+        "input_tokens": 1867084,
+        "output_tokens": 8917,
+        "total_tokens": 1876001,
+        "cached_tokens": 201216,
+        "reasoning_tokens": 1566,
+        "request_count": 66,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-20T07:06:12.550Z",
+      "totals": {
+        "input_tokens": 1893002,
+        "output_tokens": 9060,
+        "total_tokens": 1902062,
+        "cached_tokens": 201216,
+        "reasoning_tokens": 1566,
+        "request_count": 67,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-20T07:06:54.755Z",
+      "totals": {
+        "input_tokens": 1919267,
+        "output_tokens": 9117,
+        "total_tokens": 1928384,
+        "cached_tokens": 201216,
+        "reasoning_tokens": 1566,
+        "request_count": 68,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-20T07:07:04.939Z",
+      "totals": {
+        "input_tokens": 1946199,
+        "output_tokens": 9505,
+        "total_tokens": 1955704,
+        "cached_tokens": 201216,
+        "reasoning_tokens": 1642,
+        "request_count": 69,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-20T07:09:59.728Z",
+      "totals": {
+        "input_tokens": 1973520,
+        "output_tokens": 9837,
+        "total_tokens": 1983357,
+        "cached_tokens": 201216,
+        "reasoning_tokens": 1740,
+        "request_count": 70,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-20T07:10:05.648Z",
+      "totals": {
+        "input_tokens": 2000964,
+        "output_tokens": 10014,
+        "total_tokens": 2010978,
+        "cached_tokens": 201216,
+        "reasoning_tokens": 1740,
+        "request_count": 71,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-20T07:10:11.317Z",
+      "totals": {
+        "input_tokens": 2028544,
+        "output_tokens": 10170,
+        "total_tokens": 2038714,
+        "cached_tokens": 228352,
+        "reasoning_tokens": 1792,
+        "request_count": 72,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-20T07:12:39.157Z",
+      "totals": {
+        "input_tokens": 2056245,
+        "output_tokens": 10283,
+        "total_tokens": 2066528,
+        "cached_tokens": 228352,
+        "reasoning_tokens": 1792,
+        "request_count": 73,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-20T07:12:53.463Z",
+      "totals": {
+        "input_tokens": 2084176,
+        "output_tokens": 10437,
+        "total_tokens": 2094613,
+        "cached_tokens": 228352,
+        "reasoning_tokens": 1833,
+        "request_count": 74,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-20T07:13:04.927Z",
+      "totals": {
+        "input_tokens": 2112396,
+        "output_tokens": 10513,
+        "total_tokens": 2122909,
+        "cached_tokens": 228352,
+        "reasoning_tokens": 1833,
+        "request_count": 75,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-20T07:13:09.378Z",
+      "totals": {
+        "input_tokens": 2140746,
+        "output_tokens": 10562,
+        "total_tokens": 2151308,
+        "cached_tokens": 228352,
+        "reasoning_tokens": 1833,
+        "request_count": 76,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-20T07:13:14.803Z",
+      "totals": {
+        "input_tokens": 2169163,
+        "output_tokens": 10739,
+        "total_tokens": 2179902,
+        "cached_tokens": 228352,
+        "reasoning_tokens": 1833,
+        "request_count": 77,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-20T07:14:30.514Z",
+      "totals": {
+        "input_tokens": 2197809,
+        "output_tokens": 10981,
+        "total_tokens": 2208790,
+        "cached_tokens": 256000,
+        "reasoning_tokens": 1967,
+        "request_count": 78,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-20T07:14:34.752Z",
+      "totals": {
+        "input_tokens": 2226585,
+        "output_tokens": 11112,
+        "total_tokens": 2237697,
+        "cached_tokens": 256000,
+        "reasoning_tokens": 1967,
+        "request_count": 79,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-20T07:14:56.585Z",
+      "totals": {
+        "input_tokens": 2255884,
+        "output_tokens": 11385,
+        "total_tokens": 2267269,
+        "cached_tokens": 284672,
+        "reasoning_tokens": 1992,
+        "request_count": 80,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-20T07:15:00.435Z",
+      "totals": {
+        "input_tokens": 2285441,
+        "output_tokens": 11448,
+        "total_tokens": 2296889,
+        "cached_tokens": 284672,
+        "reasoning_tokens": 1992,
+        "request_count": 81,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-20T07:15:04.547Z",
+      "totals": {
+        "input_tokens": 2315080,
+        "output_tokens": 11512,
+        "total_tokens": 2326592,
+        "cached_tokens": 284672,
+        "reasoning_tokens": 1992,
+        "request_count": 82,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-20T07:15:08.822Z",
+      "totals": {
+        "input_tokens": 2344965,
+        "output_tokens": 11582,
+        "total_tokens": 2356547,
+        "cached_tokens": 313856,
+        "reasoning_tokens": 1992,
+        "request_count": 83,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-20T07:15:12.803Z",
+      "totals": {
+        "input_tokens": 2375111,
+        "output_tokens": 11657,
+        "total_tokens": 2386768,
+        "cached_tokens": 343040,
+        "reasoning_tokens": 1992,
+        "request_count": 84,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-20T07:15:22.057Z",
+      "totals": {
+        "input_tokens": 2405382,
+        "output_tokens": 11698,
+        "total_tokens": 2417080,
+        "cached_tokens": 343040,
+        "reasoning_tokens": 1992,
+        "request_count": 85,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-20T07:15:28.119Z",
+      "totals": {
+        "input_tokens": 2435883,
+        "output_tokens": 11931,
+        "total_tokens": 2447814,
+        "cached_tokens": 343040,
+        "reasoning_tokens": 2069,
+        "request_count": 86,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-20T07:15:34.749Z",
+      "totals": {
+        "input_tokens": 2466593,
+        "output_tokens": 12107,
+        "total_tokens": 2478700,
+        "cached_tokens": 343040,
+        "reasoning_tokens": 2147,
+        "request_count": 87,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-20T07:15:39.173Z",
+      "totals": {
+        "input_tokens": 2497420,
+        "output_tokens": 12255,
+        "total_tokens": 2509675,
+        "cached_tokens": 343040,
+        "reasoning_tokens": 2147,
+        "request_count": 88,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-20T07:15:44.388Z",
+      "totals": {
+        "input_tokens": 2528450,
+        "output_tokens": 12358,
+        "total_tokens": 2540808,
+        "cached_tokens": 373248,
+        "reasoning_tokens": 2198,
+        "request_count": 89,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
     }
   ],
   "baseline": {
