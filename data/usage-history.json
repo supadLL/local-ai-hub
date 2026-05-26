@@ -806,6 +806,2775 @@
         "active_accounts": 1,
         "total_accounts": 1
       }
+    },
+    {
+      "timestamp": "2026-05-20T09:27:44.377Z",
+      "totals": {
+        "input_tokens": 2553564,
+        "output_tokens": 12366,
+        "total_tokens": 2565930,
+        "cached_tokens": 373248,
+        "reasoning_tokens": 2198,
+        "request_count": 90,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-20T09:31:06.573Z",
+      "totals": {
+        "input_tokens": 2584752,
+        "output_tokens": 12637,
+        "total_tokens": 2597389,
+        "cached_tokens": 373248,
+        "reasoning_tokens": 2339,
+        "request_count": 91,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-20T09:31:11.857Z",
+      "totals": {
+        "input_tokens": 2616719,
+        "output_tokens": 12798,
+        "total_tokens": 2629517,
+        "cached_tokens": 373248,
+        "reasoning_tokens": 2339,
+        "request_count": 92,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-20T09:31:18.459Z",
+      "totals": {
+        "input_tokens": 2649474,
+        "output_tokens": 13011,
+        "total_tokens": 2662485,
+        "cached_tokens": 373248,
+        "reasoning_tokens": 2417,
+        "request_count": 93,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-20T09:31:27.353Z",
+      "totals": {
+        "input_tokens": 2682381,
+        "output_tokens": 13084,
+        "total_tokens": 2695465,
+        "cached_tokens": 373248,
+        "reasoning_tokens": 2417,
+        "request_count": 94,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-20T09:31:32.683Z",
+      "totals": {
+        "input_tokens": 2715423,
+        "output_tokens": 13155,
+        "total_tokens": 2728578,
+        "cached_tokens": 373248,
+        "reasoning_tokens": 2417,
+        "request_count": 95,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-20T09:31:36.813Z",
+      "totals": {
+        "input_tokens": 2748584,
+        "output_tokens": 13257,
+        "total_tokens": 2761841,
+        "cached_tokens": 373248,
+        "reasoning_tokens": 2417,
+        "request_count": 96,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-20T09:31:42.257Z",
+      "totals": {
+        "input_tokens": 2781865,
+        "output_tokens": 13464,
+        "total_tokens": 2795329,
+        "cached_tokens": 373248,
+        "reasoning_tokens": 2417,
+        "request_count": 97,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-20T09:34:03.347Z",
+      "totals": {
+        "input_tokens": 2817782,
+        "output_tokens": 13799,
+        "total_tokens": 2831581,
+        "cached_tokens": 373248,
+        "reasoning_tokens": 2652,
+        "request_count": 98,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-20T09:34:07.477Z",
+      "totals": {
+        "input_tokens": 2853817,
+        "output_tokens": 13858,
+        "total_tokens": 2867675,
+        "cached_tokens": 373248,
+        "reasoning_tokens": 2652,
+        "request_count": 99,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-20T09:34:10.238Z",
+      "totals": {
+        "input_tokens": 2889932,
+        "output_tokens": 13908,
+        "total_tokens": 2903840,
+        "cached_tokens": 373248,
+        "reasoning_tokens": 2652,
+        "request_count": 100,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-20T09:34:15.681Z",
+      "totals": {
+        "input_tokens": 2926117,
+        "output_tokens": 14078,
+        "total_tokens": 2940195,
+        "cached_tokens": 409088,
+        "reasoning_tokens": 2652,
+        "request_count": 101,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-20T09:34:33.110Z",
+      "totals": {
+        "input_tokens": 2963237,
+        "output_tokens": 14717,
+        "total_tokens": 2977954,
+        "cached_tokens": 409088,
+        "reasoning_tokens": 2652,
+        "request_count": 102,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-20T09:34:43.036Z",
+      "totals": {
+        "input_tokens": 3026721,
+        "output_tokens": 14932,
+        "total_tokens": 3041653,
+        "cached_tokens": 409088,
+        "reasoning_tokens": 2752,
+        "request_count": 103,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-20T09:35:31.638Z",
+      "totals": {
+        "input_tokens": 3090451,
+        "output_tokens": 15098,
+        "total_tokens": 3105549,
+        "cached_tokens": 409088,
+        "reasoning_tokens": 2816,
+        "request_count": 104,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-20T09:35:43.663Z",
+      "totals": {
+        "input_tokens": 3180111,
+        "output_tokens": 15651,
+        "total_tokens": 3195762,
+        "cached_tokens": 472576,
+        "reasoning_tokens": 2816,
+        "request_count": 105,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-20T09:36:14.292Z",
+      "totals": {
+        "input_tokens": 3270333,
+        "output_tokens": 15791,
+        "total_tokens": 3286124,
+        "cached_tokens": 472576,
+        "reasoning_tokens": 2863,
+        "request_count": 106,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-20T09:36:17.819Z",
+      "totals": {
+        "input_tokens": 3360667,
+        "output_tokens": 15831,
+        "total_tokens": 3376498,
+        "cached_tokens": 472576,
+        "reasoning_tokens": 2863,
+        "request_count": 107,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-20T09:36:28.416Z",
+      "totals": {
+        "input_tokens": 3451231,
+        "output_tokens": 16283,
+        "total_tokens": 3467514,
+        "cached_tokens": 472576,
+        "reasoning_tokens": 2863,
+        "request_count": 108,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-20T09:36:40.011Z",
+      "totals": {
+        "input_tokens": 3542290,
+        "output_tokens": 16335,
+        "total_tokens": 3558625,
+        "cached_tokens": 504320,
+        "reasoning_tokens": 2863,
+        "request_count": 109,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-20T09:36:45.601Z",
+      "totals": {
+        "input_tokens": 3633419,
+        "output_tokens": 16492,
+        "total_tokens": 3649911,
+        "cached_tokens": 504320,
+        "reasoning_tokens": 2863,
+        "request_count": 110,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-20T09:37:59.508Z",
+      "totals": {
+        "input_tokens": 3724775,
+        "output_tokens": 16527,
+        "total_tokens": 3741302,
+        "cached_tokens": 504320,
+        "reasoning_tokens": 2863,
+        "request_count": 111,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-20T09:38:13.188Z",
+      "totals": {
+        "input_tokens": 3816173,
+        "output_tokens": 16765,
+        "total_tokens": 3832938,
+        "cached_tokens": 504320,
+        "reasoning_tokens": 2905,
+        "request_count": 112,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-20T09:38:26.983Z",
+      "totals": {
+        "input_tokens": 3907814,
+        "output_tokens": 16856,
+        "total_tokens": 3924670,
+        "cached_tokens": 504320,
+        "reasoning_tokens": 2905,
+        "request_count": 113,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-20T09:38:32.311Z",
+      "totals": {
+        "input_tokens": 3999568,
+        "output_tokens": 16957,
+        "total_tokens": 4016525,
+        "cached_tokens": 594944,
+        "reasoning_tokens": 2905,
+        "request_count": 114,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-20T09:38:37.918Z",
+      "totals": {
+        "input_tokens": 4091477,
+        "output_tokens": 17050,
+        "total_tokens": 4108527,
+        "cached_tokens": 686080,
+        "reasoning_tokens": 2905,
+        "request_count": 115,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-20T09:38:47.582Z",
+      "totals": {
+        "input_tokens": 4183597,
+        "output_tokens": 17155,
+        "total_tokens": 4200752,
+        "cached_tokens": 686080,
+        "reasoning_tokens": 2905,
+        "request_count": 116,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-20T09:38:54.895Z",
+      "totals": {
+        "input_tokens": 4275841,
+        "output_tokens": 17268,
+        "total_tokens": 4293109,
+        "cached_tokens": 686080,
+        "reasoning_tokens": 2905,
+        "request_count": 117,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-20T09:39:03.566Z",
+      "totals": {
+        "input_tokens": 4368401,
+        "output_tokens": 17341,
+        "total_tokens": 4385742,
+        "cached_tokens": 686080,
+        "reasoning_tokens": 2905,
+        "request_count": 118,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-20T09:39:07.635Z",
+      "totals": {
+        "input_tokens": 4461052,
+        "output_tokens": 17445,
+        "total_tokens": 4478497,
+        "cached_tokens": 686080,
+        "reasoning_tokens": 2905,
+        "request_count": 119,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-20T09:39:47.692Z",
+      "totals": {
+        "input_tokens": 4553865,
+        "output_tokens": 17644,
+        "total_tokens": 4571509,
+        "cached_tokens": 686080,
+        "reasoning_tokens": 3015,
+        "request_count": 120,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-20T09:39:53.487Z",
+      "totals": {
+        "input_tokens": 4646785,
+        "output_tokens": 17758,
+        "total_tokens": 4664543,
+        "cached_tokens": 686080,
+        "reasoning_tokens": 3015,
+        "request_count": 121,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-20T09:39:57.514Z",
+      "totals": {
+        "input_tokens": 4740095,
+        "output_tokens": 17844,
+        "total_tokens": 4757939,
+        "cached_tokens": 686080,
+        "reasoning_tokens": 3015,
+        "request_count": 122,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-20T09:40:10.674Z",
+      "totals": {
+        "input_tokens": 4835309,
+        "output_tokens": 18262,
+        "total_tokens": 4853571,
+        "cached_tokens": 718848,
+        "reasoning_tokens": 3340,
+        "request_count": 123,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-20T09:40:14.174Z",
+      "totals": {
+        "input_tokens": 4930729,
+        "output_tokens": 18304,
+        "total_tokens": 4949033,
+        "cached_tokens": 718848,
+        "reasoning_tokens": 3340,
+        "request_count": 124,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-20T09:40:26.544Z",
+      "totals": {
+        "input_tokens": 5026375,
+        "output_tokens": 18822,
+        "total_tokens": 5045197,
+        "cached_tokens": 718848,
+        "reasoning_tokens": 3700,
+        "request_count": 125,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-20T09:40:35.933Z",
+      "totals": {
+        "input_tokens": 5122385,
+        "output_tokens": 19193,
+        "total_tokens": 5141578,
+        "cached_tokens": 718848,
+        "reasoning_tokens": 3988,
+        "request_count": 126,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-20T09:40:43.793Z",
+      "totals": {
+        "input_tokens": 5218494,
+        "output_tokens": 19499,
+        "total_tokens": 5237993,
+        "cached_tokens": 718848,
+        "reasoning_tokens": 3988,
+        "request_count": 127,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-20T09:42:49.478Z",
+      "totals": {
+        "input_tokens": 5316389,
+        "output_tokens": 19757,
+        "total_tokens": 5336146,
+        "cached_tokens": 718848,
+        "reasoning_tokens": 4128,
+        "request_count": 128,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-20T09:43:16.355Z",
+      "totals": {
+        "input_tokens": 5415277,
+        "output_tokens": 20828,
+        "total_tokens": 5436105,
+        "cached_tokens": 742912,
+        "reasoning_tokens": 4128,
+        "request_count": 129,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-20T09:44:11.496Z",
+      "totals": {
+        "input_tokens": 5515243,
+        "output_tokens": 22731,
+        "total_tokens": 5537974,
+        "cached_tokens": 742912,
+        "reasoning_tokens": 4159,
+        "request_count": 130,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-20T09:44:52.236Z",
+      "totals": {
+        "input_tokens": 5617086,
+        "output_tokens": 23152,
+        "total_tokens": 5640238,
+        "cached_tokens": 766976,
+        "reasoning_tokens": 4297,
+        "request_count": 131,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-20T09:45:01.405Z",
+      "totals": {
+        "input_tokens": 5719374,
+        "output_tokens": 23305,
+        "total_tokens": 5742679,
+        "cached_tokens": 791040,
+        "reasoning_tokens": 4297,
+        "request_count": 132,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-20T09:45:56.646Z",
+      "totals": {
+        "input_tokens": 5822000,
+        "output_tokens": 23562,
+        "total_tokens": 5845562,
+        "cached_tokens": 791040,
+        "reasoning_tokens": 4428,
+        "request_count": 133,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-20T09:47:13.602Z",
+      "totals": {
+        "input_tokens": 5924789,
+        "output_tokens": 23828,
+        "total_tokens": 5948617,
+        "cached_tokens": 791040,
+        "reasoning_tokens": 4599,
+        "request_count": 134,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-20T09:47:21.695Z",
+      "totals": {
+        "input_tokens": 6027692,
+        "output_tokens": 24112,
+        "total_tokens": 6051804,
+        "cached_tokens": 815104,
+        "reasoning_tokens": 4771,
+        "request_count": 135,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-20T09:47:27.701Z",
+      "totals": {
+        "input_tokens": 6131602,
+        "output_tokens": 24249,
+        "total_tokens": 6155851,
+        "cached_tokens": 917504,
+        "reasoning_tokens": 4816,
+        "request_count": 136,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-20T09:47:35.080Z",
+      "totals": {
+        "input_tokens": 6235763,
+        "output_tokens": 24493,
+        "total_tokens": 6260256,
+        "cached_tokens": 1018880,
+        "reasoning_tokens": 4846,
+        "request_count": 137,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-20T09:48:33.521Z",
+      "totals": {
+        "input_tokens": 6340149,
+        "output_tokens": 24670,
+        "total_tokens": 6364819,
+        "cached_tokens": 1018880,
+        "reasoning_tokens": 4959,
+        "request_count": 138,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-20T09:51:32.998Z",
+      "totals": {
+        "input_tokens": 6444604,
+        "output_tokens": 33884,
+        "total_tokens": 6478488,
+        "cached_tokens": 1121280,
+        "reasoning_tokens": 5030,
+        "request_count": 139,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-20T09:51:38.806Z",
+      "totals": {
+        "input_tokens": 6558532,
+        "output_tokens": 34055,
+        "total_tokens": 6592587,
+        "cached_tokens": 1121280,
+        "reasoning_tokens": 5030,
+        "request_count": 140,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-20T09:54:51.905Z",
+      "totals": {
+        "input_tokens": 6672701,
+        "output_tokens": 34110,
+        "total_tokens": 6706811,
+        "cached_tokens": 1121280,
+        "reasoning_tokens": 5030,
+        "request_count": 141,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-20T09:59:33.658Z",
+      "totals": {
+        "input_tokens": 6786816,
+        "output_tokens": 34349,
+        "total_tokens": 6821165,
+        "cached_tokens": 1121280,
+        "reasoning_tokens": 5118,
+        "request_count": 142,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-20T10:03:13.447Z",
+      "totals": {
+        "input_tokens": 6901106,
+        "output_tokens": 43574,
+        "total_tokens": 6944680,
+        "cached_tokens": 1121280,
+        "reasoning_tokens": 5181,
+        "request_count": 143,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-20T10:03:21.020Z",
+      "totals": {
+        "input_tokens": 7024592,
+        "output_tokens": 43644,
+        "total_tokens": 7068236,
+        "cached_tokens": 1121280,
+        "reasoning_tokens": 5181,
+        "request_count": 144,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-20T10:06:11.596Z",
+      "totals": {
+        "input_tokens": 7148189,
+        "output_tokens": 52803,
+        "total_tokens": 7200992,
+        "cached_tokens": 1121280,
+        "reasoning_tokens": 5181,
+        "request_count": 145,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-20T10:06:19.036Z",
+      "totals": {
+        "input_tokens": 7281277,
+        "output_tokens": 52992,
+        "total_tokens": 7334269,
+        "cached_tokens": 1121280,
+        "reasoning_tokens": 5181,
+        "request_count": 146,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-20T10:12:36.881Z",
+      "totals": {
+        "input_tokens": 7415925,
+        "output_tokens": 61217,
+        "total_tokens": 7477142,
+        "cached_tokens": 1121280,
+        "reasoning_tokens": 5181,
+        "request_count": 147,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-20T10:12:46.074Z",
+      "totals": {
+        "input_tokens": 7558808,
+        "output_tokens": 61413,
+        "total_tokens": 7620221,
+        "cached_tokens": 1121280,
+        "reasoning_tokens": 5181,
+        "request_count": 148,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-20T10:15:05.410Z",
+      "totals": {
+        "input_tokens": 7701942,
+        "output_tokens": 61532,
+        "total_tokens": 7763474,
+        "cached_tokens": 1121280,
+        "reasoning_tokens": 5219,
+        "request_count": 149,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-20T10:15:19.878Z",
+      "totals": {
+        "input_tokens": 7846074,
+        "output_tokens": 61710,
+        "total_tokens": 7907784,
+        "cached_tokens": 1121280,
+        "reasoning_tokens": 5304,
+        "request_count": 150,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-20T10:15:26.780Z",
+      "totals": {
+        "input_tokens": 7990458,
+        "output_tokens": 61876,
+        "total_tokens": 8052334,
+        "cached_tokens": 1121280,
+        "reasoning_tokens": 5304,
+        "request_count": 151,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-20T10:18:31.341Z",
+      "totals": {
+        "input_tokens": 8135078,
+        "output_tokens": 61928,
+        "total_tokens": 8197006,
+        "cached_tokens": 1121280,
+        "reasoning_tokens": 5304,
+        "request_count": 152,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T01:45:43.258Z",
+      "totals": {
+        "input_tokens": 8135363,
+        "output_tokens": 61940,
+        "total_tokens": 8197303,
+        "cached_tokens": 1121280,
+        "reasoning_tokens": 5304,
+        "request_count": 153,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T01:45:48.851Z",
+      "totals": {
+        "input_tokens": 8160589,
+        "output_tokens": 62215,
+        "total_tokens": 8222804,
+        "cached_tokens": 1121280,
+        "reasoning_tokens": 5335,
+        "request_count": 154,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T01:46:59.685Z",
+      "totals": {
+        "input_tokens": 8186275,
+        "output_tokens": 62338,
+        "total_tokens": 8248613,
+        "cached_tokens": 1121280,
+        "reasoning_tokens": 5391,
+        "request_count": 155,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T01:47:43.528Z",
+      "totals": {
+        "input_tokens": 8211939,
+        "output_tokens": 62692,
+        "total_tokens": 8274631,
+        "cached_tokens": 1146368,
+        "reasoning_tokens": 5466,
+        "request_count": 156,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T01:48:01.627Z",
+      "totals": {
+        "input_tokens": 8237887,
+        "output_tokens": 62985,
+        "total_tokens": 8300872,
+        "cached_tokens": 1146368,
+        "reasoning_tokens": 5666,
+        "request_count": 157,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T01:48:04.521Z",
+      "totals": {
+        "input_tokens": 8263947,
+        "output_tokens": 63041,
+        "total_tokens": 8326988,
+        "cached_tokens": 1146368,
+        "reasoning_tokens": 5666,
+        "request_count": 158,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T01:48:06.796Z",
+      "totals": {
+        "input_tokens": 8290084,
+        "output_tokens": 63065,
+        "total_tokens": 8353149,
+        "cached_tokens": 1146368,
+        "reasoning_tokens": 5666,
+        "request_count": 159,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T01:48:12.316Z",
+      "totals": {
+        "input_tokens": 8316261,
+        "output_tokens": 63189,
+        "total_tokens": 8379450,
+        "cached_tokens": 1171968,
+        "reasoning_tokens": 5666,
+        "request_count": 160,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T01:49:44.519Z",
+      "totals": {
+        "input_tokens": 8343114,
+        "output_tokens": 63340,
+        "total_tokens": 8406454,
+        "cached_tokens": 1171968,
+        "reasoning_tokens": 5760,
+        "request_count": 161,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T01:49:47.139Z",
+      "totals": {
+        "input_tokens": 8370038,
+        "output_tokens": 63364,
+        "total_tokens": 8433402,
+        "cached_tokens": 1171968,
+        "reasoning_tokens": 5760,
+        "request_count": 162,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T01:49:53.067Z",
+      "totals": {
+        "input_tokens": 8397002,
+        "output_tokens": 63549,
+        "total_tokens": 8460551,
+        "cached_tokens": 1171968,
+        "reasoning_tokens": 5760,
+        "request_count": 163,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T01:50:06.752Z",
+      "totals": {
+        "input_tokens": 8425129,
+        "output_tokens": 63890,
+        "total_tokens": 8489019,
+        "cached_tokens": 1171968,
+        "reasoning_tokens": 5939,
+        "request_count": 164,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T01:50:17.634Z",
+      "totals": {
+        "input_tokens": 8453471,
+        "output_tokens": 64292,
+        "total_tokens": 8517763,
+        "cached_tokens": 1171968,
+        "reasoning_tokens": 6231,
+        "request_count": 165,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T01:50:28.567Z",
+      "totals": {
+        "input_tokens": 8482547,
+        "output_tokens": 64562,
+        "total_tokens": 8547109,
+        "cached_tokens": 1171968,
+        "reasoning_tokens": 6407,
+        "request_count": 166,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T01:50:31.474Z",
+      "totals": {
+        "input_tokens": 8511886,
+        "output_tokens": 64610,
+        "total_tokens": 8576496,
+        "cached_tokens": 1171968,
+        "reasoning_tokens": 6407,
+        "request_count": 167,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T01:50:42.741Z",
+      "totals": {
+        "input_tokens": 8544011,
+        "output_tokens": 64805,
+        "total_tokens": 8608816,
+        "cached_tokens": 1171968,
+        "reasoning_tokens": 6407,
+        "request_count": 168,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T01:50:58.975Z",
+      "totals": {
+        "input_tokens": 8576537,
+        "output_tokens": 65381,
+        "total_tokens": 8641918,
+        "cached_tokens": 1197568,
+        "reasoning_tokens": 6407,
+        "request_count": 169,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T01:51:02.813Z",
+      "totals": {
+        "input_tokens": 8609688,
+        "output_tokens": 65404,
+        "total_tokens": 8675092,
+        "cached_tokens": 1222656,
+        "reasoning_tokens": 6407,
+        "request_count": 170,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T01:51:05.078Z",
+      "totals": {
+        "input_tokens": 8642878,
+        "output_tokens": 65443,
+        "total_tokens": 8708321,
+        "cached_tokens": 1222656,
+        "reasoning_tokens": 6407,
+        "request_count": 171,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T01:51:11.945Z",
+      "totals": {
+        "input_tokens": 8643221,
+        "output_tokens": 65458,
+        "total_tokens": 8708679,
+        "cached_tokens": 1222656,
+        "reasoning_tokens": 6407,
+        "request_count": 172,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T01:51:20.427Z",
+      "totals": {
+        "input_tokens": 8677043,
+        "output_tokens": 65831,
+        "total_tokens": 8742874,
+        "cached_tokens": 1222656,
+        "reasoning_tokens": 6407,
+        "request_count": 173,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T01:52:00.634Z",
+      "totals": {
+        "input_tokens": 8711292,
+        "output_tokens": 66272,
+        "total_tokens": 8777564,
+        "cached_tokens": 1247744,
+        "reasoning_tokens": 6613,
+        "request_count": 174,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T01:52:03.099Z",
+      "totals": {
+        "input_tokens": 8745651,
+        "output_tokens": 66323,
+        "total_tokens": 8811974,
+        "cached_tokens": 1276928,
+        "reasoning_tokens": 6613,
+        "request_count": 175,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T01:52:05.532Z",
+      "totals": {
+        "input_tokens": 8780081,
+        "output_tokens": 66347,
+        "total_tokens": 8846428,
+        "cached_tokens": 1310720,
+        "reasoning_tokens": 6613,
+        "request_count": 176,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T01:52:12.126Z",
+      "totals": {
+        "input_tokens": 8814551,
+        "output_tokens": 66496,
+        "total_tokens": 8881047,
+        "cached_tokens": 1310720,
+        "reasoning_tokens": 6613,
+        "request_count": 177,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T01:52:23.945Z",
+      "totals": {
+        "input_tokens": 8850296,
+        "output_tokens": 66700,
+        "total_tokens": 8916996,
+        "cached_tokens": 1310720,
+        "reasoning_tokens": 6743,
+        "request_count": 178,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T01:52:26.763Z",
+      "totals": {
+        "input_tokens": 8886129,
+        "output_tokens": 66724,
+        "total_tokens": 8952853,
+        "cached_tokens": 1343488,
+        "reasoning_tokens": 6743,
+        "request_count": 179,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T01:52:29.512Z",
+      "totals": {
+        "input_tokens": 8922002,
+        "output_tokens": 66785,
+        "total_tokens": 8988787,
+        "cached_tokens": 1343488,
+        "reasoning_tokens": 6743,
+        "request_count": 180,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T01:52:34.131Z",
+      "totals": {
+        "input_tokens": 8958422,
+        "output_tokens": 66825,
+        "total_tokens": 9025247,
+        "cached_tokens": 1378816,
+        "reasoning_tokens": 6743,
+        "request_count": 181,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T01:52:41.514Z",
+      "totals": {
+        "input_tokens": 8995091,
+        "output_tokens": 66983,
+        "total_tokens": 9062074,
+        "cached_tokens": 1378816,
+        "reasoning_tokens": 6785,
+        "request_count": 182,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T01:52:48.116Z",
+      "totals": {
+        "input_tokens": 9031923,
+        "output_tokens": 67124,
+        "total_tokens": 9099047,
+        "cached_tokens": 1378816,
+        "reasoning_tokens": 6785,
+        "request_count": 183,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T01:52:55.275Z",
+      "totals": {
+        "input_tokens": 9069170,
+        "output_tokens": 67210,
+        "total_tokens": 9136380,
+        "cached_tokens": 1414144,
+        "reasoning_tokens": 6785,
+        "request_count": 184,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T01:53:10.007Z",
+      "totals": {
+        "input_tokens": 9106519,
+        "output_tokens": 67732,
+        "total_tokens": 9174251,
+        "cached_tokens": 1449984,
+        "reasoning_tokens": 6785,
+        "request_count": 185,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T01:53:27.417Z",
+      "totals": {
+        "input_tokens": 9144397,
+        "output_tokens": 68208,
+        "total_tokens": 9212605,
+        "cached_tokens": 1475584,
+        "reasoning_tokens": 7050,
+        "request_count": 186,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T01:53:35.645Z",
+      "totals": {
+        "input_tokens": 9182278,
+        "output_tokens": 68392,
+        "total_tokens": 9250670,
+        "cached_tokens": 1512960,
+        "reasoning_tokens": 7151,
+        "request_count": 187,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T01:53:38.755Z",
+      "totals": {
+        "input_tokens": 9220261,
+        "output_tokens": 68449,
+        "total_tokens": 9288710,
+        "cached_tokens": 1546752,
+        "reasoning_tokens": 7151,
+        "request_count": 188,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T01:53:41.781Z",
+      "totals": {
+        "input_tokens": 9258322,
+        "output_tokens": 68473,
+        "total_tokens": 9326795,
+        "cached_tokens": 1579520,
+        "reasoning_tokens": 7151,
+        "request_count": 189,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T01:53:47.846Z",
+      "totals": {
+        "input_tokens": 9296423,
+        "output_tokens": 68662,
+        "total_tokens": 9365085,
+        "cached_tokens": 1613824,
+        "reasoning_tokens": 7151,
+        "request_count": 190,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T01:53:55.681Z",
+      "totals": {
+        "input_tokens": 9334602,
+        "output_tokens": 68792,
+        "total_tokens": 9403394,
+        "cached_tokens": 1613824,
+        "reasoning_tokens": 7151,
+        "request_count": 191,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T01:54:00.474Z",
+      "totals": {
+        "input_tokens": 9375884,
+        "output_tokens": 68901,
+        "total_tokens": 9444785,
+        "cached_tokens": 1646080,
+        "reasoning_tokens": 7168,
+        "request_count": 192,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T01:54:05.414Z",
+      "totals": {
+        "input_tokens": 9417848,
+        "output_tokens": 68997,
+        "total_tokens": 9486845,
+        "cached_tokens": 1683968,
+        "reasoning_tokens": 7168,
+        "request_count": 193,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T01:54:09.108Z",
+      "totals": {
+        "input_tokens": 9460115,
+        "output_tokens": 69083,
+        "total_tokens": 9529198,
+        "cached_tokens": 1683968,
+        "reasoning_tokens": 7168,
+        "request_count": 194,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T01:54:33.419Z",
+      "totals": {
+        "input_tokens": 9504114,
+        "output_tokens": 69970,
+        "total_tokens": 9574084,
+        "cached_tokens": 1721856,
+        "reasoning_tokens": 7894,
+        "request_count": 195,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T01:54:38.356Z",
+      "totals": {
+        "input_tokens": 9548443,
+        "output_tokens": 70059,
+        "total_tokens": 9618502,
+        "cached_tokens": 1749504,
+        "reasoning_tokens": 7894,
+        "request_count": 196,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T01:54:48.369Z",
+      "totals": {
+        "input_tokens": 9593928,
+        "output_tokens": 70370,
+        "total_tokens": 9664298,
+        "cached_tokens": 1749504,
+        "reasoning_tokens": 8150,
+        "request_count": 197,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T01:55:02.041Z",
+      "totals": {
+        "input_tokens": 9639482,
+        "output_tokens": 70846,
+        "total_tokens": 9710328,
+        "cached_tokens": 1786368,
+        "reasoning_tokens": 8150,
+        "request_count": 198,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T01:56:03.855Z",
+      "totals": {
+        "input_tokens": 9685559,
+        "output_tokens": 71372,
+        "total_tokens": 9756931,
+        "cached_tokens": 1823744,
+        "reasoning_tokens": 8198,
+        "request_count": 199,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T01:59:29.361Z",
+      "totals": {
+        "input_tokens": 9732175,
+        "output_tokens": 71937,
+        "total_tokens": 9804112,
+        "cached_tokens": 1865216,
+        "reasoning_tokens": 8375,
+        "request_count": 200,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T02:01:56.383Z",
+      "totals": {
+        "input_tokens": 9779228,
+        "output_tokens": 72284,
+        "total_tokens": 9851512,
+        "cached_tokens": 1906176,
+        "reasoning_tokens": 8501,
+        "request_count": 201,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T02:04:19.614Z",
+      "totals": {
+        "input_tokens": 9826551,
+        "output_tokens": 72739,
+        "total_tokens": 9899290,
+        "cached_tokens": 1952256,
+        "reasoning_tokens": 8529,
+        "request_count": 202,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T02:06:49.933Z",
+      "totals": {
+        "input_tokens": 9874321,
+        "output_tokens": 73470,
+        "total_tokens": 9947791,
+        "cached_tokens": 1952256,
+        "reasoning_tokens": 8597,
+        "request_count": 203,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T02:07:13.900Z",
+      "totals": {
+        "input_tokens": 9922760,
+        "output_tokens": 73663,
+        "total_tokens": 9996423,
+        "cached_tokens": 1998848,
+        "reasoning_tokens": 8698,
+        "request_count": 204,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T02:07:17.037Z",
+      "totals": {
+        "input_tokens": 9971310,
+        "output_tokens": 73687,
+        "total_tokens": 10044997,
+        "cached_tokens": 2044416,
+        "reasoning_tokens": 8698,
+        "request_count": 205,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T02:07:25.512Z",
+      "totals": {
+        "input_tokens": 10019900,
+        "output_tokens": 74028,
+        "total_tokens": 10093928,
+        "cached_tokens": 2044416,
+        "reasoning_tokens": 8698,
+        "request_count": 206,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T02:07:30.551Z",
+      "totals": {
+        "input_tokens": 10069248,
+        "output_tokens": 74167,
+        "total_tokens": 10143415,
+        "cached_tokens": 2044416,
+        "reasoning_tokens": 8698,
+        "request_count": 207,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T02:07:36.569Z",
+      "totals": {
+        "input_tokens": 10121984,
+        "output_tokens": 74281,
+        "total_tokens": 10196265,
+        "cached_tokens": 2092544,
+        "reasoning_tokens": 8698,
+        "request_count": 208,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T02:07:39.972Z",
+      "totals": {
+        "input_tokens": 10175613,
+        "output_tokens": 74345,
+        "total_tokens": 10249958,
+        "cached_tokens": 2139648,
+        "reasoning_tokens": 8698,
+        "request_count": 209,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T02:07:45.695Z",
+      "totals": {
+        "input_tokens": 10229741,
+        "output_tokens": 74512,
+        "total_tokens": 10304253,
+        "cached_tokens": 2191872,
+        "reasoning_tokens": 8698,
+        "request_count": 210,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T02:07:53.874Z",
+      "totals": {
+        "input_tokens": 10287381,
+        "output_tokens": 74650,
+        "total_tokens": 10362031,
+        "cached_tokens": 2191872,
+        "reasoning_tokens": 8766,
+        "request_count": 211,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T02:08:11.231Z",
+      "totals": {
+        "input_tokens": 10345105,
+        "output_tokens": 75486,
+        "total_tokens": 10420591,
+        "cached_tokens": 2249216,
+        "reasoning_tokens": 8766,
+        "request_count": 212,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T02:10:04.722Z",
+      "totals": {
+        "input_tokens": 10403684,
+        "output_tokens": 75949,
+        "total_tokens": 10479633,
+        "cached_tokens": 2249216,
+        "reasoning_tokens": 8837,
+        "request_count": 213,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T02:13:54.021Z",
+      "totals": {
+        "input_tokens": 10462723,
+        "output_tokens": 76007,
+        "total_tokens": 10538730,
+        "cached_tokens": 2249216,
+        "reasoning_tokens": 8837,
+        "request_count": 214,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T02:16:39.165Z",
+      "totals": {
+        "input_tokens": 10521847,
+        "output_tokens": 76789,
+        "total_tokens": 10598636,
+        "cached_tokens": 2302464,
+        "reasoning_tokens": 9010,
+        "request_count": 215,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T02:18:09.406Z",
+      "totals": {
+        "input_tokens": 10581602,
+        "output_tokens": 76879,
+        "total_tokens": 10658481,
+        "cached_tokens": 2302464,
+        "reasoning_tokens": 9050,
+        "request_count": 216,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T02:18:20.224Z",
+      "totals": {
+        "input_tokens": 10642742,
+        "output_tokens": 77242,
+        "total_tokens": 10719984,
+        "cached_tokens": 2359808,
+        "reasoning_tokens": 9163,
+        "request_count": 217,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T02:18:29.701Z",
+      "totals": {
+        "input_tokens": 10704316,
+        "output_tokens": 77373,
+        "total_tokens": 10781689,
+        "cached_tokens": 2362368,
+        "reasoning_tokens": 9211,
+        "request_count": 218,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T02:18:35.873Z",
+      "totals": {
+        "input_tokens": 10766485,
+        "output_tokens": 77531,
+        "total_tokens": 10844016,
+        "cached_tokens": 2423296,
+        "reasoning_tokens": 9211,
+        "request_count": 219,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T02:18:42.167Z",
+      "totals": {
+        "input_tokens": 10829433,
+        "output_tokens": 77629,
+        "total_tokens": 10907062,
+        "cached_tokens": 2423296,
+        "reasoning_tokens": 9211,
+        "request_count": 220,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T02:18:47.860Z",
+      "totals": {
+        "input_tokens": 10893143,
+        "output_tokens": 77732,
+        "total_tokens": 10970875,
+        "cached_tokens": 2423296,
+        "reasoning_tokens": 9211,
+        "request_count": 221,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T02:18:52.794Z",
+      "totals": {
+        "input_tokens": 10958744,
+        "output_tokens": 77836,
+        "total_tokens": 11036580,
+        "cached_tokens": 2486784,
+        "reasoning_tokens": 9211,
+        "request_count": 222,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T02:19:01.039Z",
+      "totals": {
+        "input_tokens": 11026394,
+        "output_tokens": 78098,
+        "total_tokens": 11104492,
+        "cached_tokens": 2486784,
+        "reasoning_tokens": 9328,
+        "request_count": 223,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T02:19:30.320Z",
+      "totals": {
+        "input_tokens": 11099169,
+        "output_tokens": 79448,
+        "total_tokens": 11178617,
+        "cached_tokens": 2486784,
+        "reasoning_tokens": 9446,
+        "request_count": 224,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T02:19:34.303Z",
+      "totals": {
+        "input_tokens": 11173225,
+        "output_tokens": 79495,
+        "total_tokens": 11252720,
+        "cached_tokens": 2486784,
+        "reasoning_tokens": 9446,
+        "request_count": 225,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T02:19:53.080Z",
+      "totals": {
+        "input_tokens": 11173546,
+        "output_tokens": 79507,
+        "total_tokens": 11253053,
+        "cached_tokens": 2486784,
+        "reasoning_tokens": 9446,
+        "request_count": 226,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T02:19:58.609Z",
+      "totals": {
+        "input_tokens": 11249016,
+        "output_tokens": 79596,
+        "total_tokens": 11328612,
+        "cached_tokens": 2486784,
+        "reasoning_tokens": 9446,
+        "request_count": 227,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T02:20:01.618Z",
+      "totals": {
+        "input_tokens": 11324596,
+        "output_tokens": 79650,
+        "total_tokens": 11404246,
+        "cached_tokens": 2562048,
+        "reasoning_tokens": 9446,
+        "request_count": 228,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T02:20:05.409Z",
+      "totals": {
+        "input_tokens": 11400251,
+        "output_tokens": 79674,
+        "total_tokens": 11479925,
+        "cached_tokens": 2562048,
+        "reasoning_tokens": 9446,
+        "request_count": 229,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T02:20:08.853Z",
+      "totals": {
+        "input_tokens": 11475946,
+        "output_tokens": 79714,
+        "total_tokens": 11555660,
+        "cached_tokens": 2562048,
+        "reasoning_tokens": 9446,
+        "request_count": 230,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T02:20:23.417Z",
+      "totals": {
+        "input_tokens": 11551890,
+        "output_tokens": 80271,
+        "total_tokens": 11632161,
+        "cached_tokens": 2620928,
+        "reasoning_tokens": 9893,
+        "request_count": 231,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T02:21:06.526Z",
+      "totals": {
+        "input_tokens": 11628556,
+        "output_tokens": 80555,
+        "total_tokens": 11709111,
+        "cached_tokens": 2694656,
+        "reasoning_tokens": 10079,
+        "request_count": 232,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T02:21:26.163Z",
+      "totals": {
+        "input_tokens": 11705381,
+        "output_tokens": 81052,
+        "total_tokens": 11786433,
+        "cached_tokens": 2761728,
+        "reasoning_tokens": 10079,
+        "request_count": 233,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T02:21:43.019Z",
+      "totals": {
+        "input_tokens": 11782903,
+        "output_tokens": 81108,
+        "total_tokens": 11864011,
+        "cached_tokens": 2761728,
+        "reasoning_tokens": 10079,
+        "request_count": 234,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T02:21:46.734Z",
+      "totals": {
+        "input_tokens": 11860497,
+        "output_tokens": 81132,
+        "total_tokens": 11941629,
+        "cached_tokens": 2764288,
+        "reasoning_tokens": 10079,
+        "request_count": 235,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T02:21:50.521Z",
+      "totals": {
+        "input_tokens": 11938131,
+        "output_tokens": 81153,
+        "total_tokens": 12019284,
+        "cached_tokens": 2764288,
+        "reasoning_tokens": 10079,
+        "request_count": 236,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T02:21:56.921Z",
+      "totals": {
+        "input_tokens": 12015812,
+        "output_tokens": 81249,
+        "total_tokens": 12097061,
+        "cached_tokens": 2764288,
+        "reasoning_tokens": 10079,
+        "request_count": 237,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T02:22:02.054Z",
+      "totals": {
+        "input_tokens": 12094090,
+        "output_tokens": 81393,
+        "total_tokens": 12175483,
+        "cached_tokens": 2840576,
+        "reasoning_tokens": 10079,
+        "request_count": 238,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T02:22:07.172Z",
+      "totals": {
+        "input_tokens": 12173213,
+        "output_tokens": 81501,
+        "total_tokens": 12254714,
+        "cached_tokens": 2915840,
+        "reasoning_tokens": 10079,
+        "request_count": 239,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T02:22:19.231Z",
+      "totals": {
+        "input_tokens": 12252462,
+        "output_tokens": 82001,
+        "total_tokens": 12334463,
+        "cached_tokens": 2977280,
+        "reasoning_tokens": 10079,
+        "request_count": 240,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T02:22:52.807Z",
+      "totals": {
+        "input_tokens": 12332218,
+        "output_tokens": 82226,
+        "total_tokens": 12414444,
+        "cached_tokens": 2977280,
+        "reasoning_tokens": 10211,
+        "request_count": 241,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T02:22:56.409Z",
+      "totals": {
+        "input_tokens": 12412088,
+        "output_tokens": 82281,
+        "total_tokens": 12494369,
+        "cached_tokens": 3053568,
+        "reasoning_tokens": 10211,
+        "request_count": 242,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T02:22:59.520Z",
+      "totals": {
+        "input_tokens": 12492034,
+        "output_tokens": 82305,
+        "total_tokens": 12574339,
+        "cached_tokens": 3132416,
+        "reasoning_tokens": 10211,
+        "request_count": 243,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T02:23:03.555Z",
+      "totals": {
+        "input_tokens": 12572020,
+        "output_tokens": 82398,
+        "total_tokens": 12654418,
+        "cached_tokens": 3210240,
+        "reasoning_tokens": 10211,
+        "request_count": 244,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T02:23:07.850Z",
+      "totals": {
+        "input_tokens": 12652469,
+        "output_tokens": 82489,
+        "total_tokens": 12734958,
+        "cached_tokens": 3287552,
+        "reasoning_tokens": 10211,
+        "request_count": 245,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T02:23:14.823Z",
+      "totals": {
+        "input_tokens": 12733601,
+        "output_tokens": 82635,
+        "total_tokens": 12816236,
+        "cached_tokens": 3367424,
+        "reasoning_tokens": 10211,
+        "request_count": 246,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T02:29:27.175Z",
+      "totals": {
+        "input_tokens": 12815189,
+        "output_tokens": 82707,
+        "total_tokens": 12897896,
+        "cached_tokens": 3443200,
+        "reasoning_tokens": 10211,
+        "request_count": 247,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T02:29:46.135Z",
+      "totals": {
+        "input_tokens": 12896901,
+        "output_tokens": 83211,
+        "total_tokens": 12980112,
+        "cached_tokens": 3524608,
+        "reasoning_tokens": 10211,
+        "request_count": 248,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T02:29:51.869Z",
+      "totals": {
+        "input_tokens": 12979170,
+        "output_tokens": 83260,
+        "total_tokens": 13062430,
+        "cached_tokens": 3524608,
+        "reasoning_tokens": 10211,
+        "request_count": 249,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T02:29:57.920Z",
+      "totals": {
+        "input_tokens": 13061504,
+        "output_tokens": 83284,
+        "total_tokens": 13144788,
+        "cached_tokens": 3603456,
+        "reasoning_tokens": 10211,
+        "request_count": 250,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T02:30:03.985Z",
+      "totals": {
+        "input_tokens": 13143878,
+        "output_tokens": 83352,
+        "total_tokens": 13227230,
+        "cached_tokens": 3680768,
+        "reasoning_tokens": 10211,
+        "request_count": 251,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T02:30:16.213Z",
+      "totals": {
+        "input_tokens": 13226609,
+        "output_tokens": 83430,
+        "total_tokens": 13310039,
+        "cached_tokens": 3680768,
+        "reasoning_tokens": 10211,
+        "request_count": 252,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T02:30:25.383Z",
+      "totals": {
+        "input_tokens": 13309440,
+        "output_tokens": 83593,
+        "total_tokens": 13393033,
+        "cached_tokens": 3760128,
+        "reasoning_tokens": 10211,
+        "request_count": 253,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T02:30:36.443Z",
+      "totals": {
+        "input_tokens": 13395014,
+        "output_tokens": 83693,
+        "total_tokens": 13478707,
+        "cached_tokens": 3842048,
+        "reasoning_tokens": 10211,
+        "request_count": 254,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T02:30:46.514Z",
+      "totals": {
+        "input_tokens": 13481680,
+        "output_tokens": 83795,
+        "total_tokens": 13565475,
+        "cached_tokens": 3924480,
+        "reasoning_tokens": 10211,
+        "request_count": 255,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T02:30:58.736Z",
+      "totals": {
+        "input_tokens": 13568466,
+        "output_tokens": 84267,
+        "total_tokens": 13652733,
+        "cached_tokens": 4006400,
+        "reasoning_tokens": 10211,
+        "request_count": 256,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T02:33:10.693Z",
+      "totals": {
+        "input_tokens": 13657878,
+        "output_tokens": 84672,
+        "total_tokens": 13742550,
+        "cached_tokens": 4008960,
+        "reasoning_tokens": 10517,
+        "request_count": 257,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T02:34:09.209Z",
+      "totals": {
+        "input_tokens": 13749156,
+        "output_tokens": 84982,
+        "total_tokens": 13834138,
+        "cached_tokens": 4033024,
+        "reasoning_tokens": 10759,
+        "request_count": 258,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T02:34:18.261Z",
+      "totals": {
+        "input_tokens": 13840709,
+        "output_tokens": 85113,
+        "total_tokens": 13925822,
+        "cached_tokens": 4033024,
+        "reasoning_tokens": 10780,
+        "request_count": 259,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T02:34:27.641Z",
+      "totals": {
+        "input_tokens": 13932530,
+        "output_tokens": 85313,
+        "total_tokens": 14017843,
+        "cached_tokens": 4033024,
+        "reasoning_tokens": 10780,
+        "request_count": 260,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T02:35:44.546Z",
+      "totals": {
+        "input_tokens": 14024589,
+        "output_tokens": 86206,
+        "total_tokens": 14110795,
+        "cached_tokens": 4033024,
+        "reasoning_tokens": 10906,
+        "request_count": 261,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T02:36:24.594Z",
+      "totals": {
+        "input_tokens": 14117597,
+        "output_tokens": 86371,
+        "total_tokens": 14203968,
+        "cached_tokens": 4033024,
+        "reasoning_tokens": 10951,
+        "request_count": 262,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T02:36:28.990Z",
+      "totals": {
+        "input_tokens": 14210746,
+        "output_tokens": 86395,
+        "total_tokens": 14297141,
+        "cached_tokens": 4033024,
+        "reasoning_tokens": 10951,
+        "request_count": 263,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T02:36:34.941Z",
+      "totals": {
+        "input_tokens": 14303935,
+        "output_tokens": 86521,
+        "total_tokens": 14390456,
+        "cached_tokens": 4124160,
+        "reasoning_tokens": 10951,
+        "request_count": 264,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T02:36:44.128Z",
+      "totals": {
+        "input_tokens": 14397411,
+        "output_tokens": 86846,
+        "total_tokens": 14484257,
+        "cached_tokens": 4148224,
+        "reasoning_tokens": 10951,
+        "request_count": 265,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T02:37:50.555Z",
+      "totals": {
+        "input_tokens": 14491225,
+        "output_tokens": 87129,
+        "total_tokens": 14578354,
+        "cached_tokens": 4148224,
+        "reasoning_tokens": 11140,
+        "request_count": 266,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T02:37:58.471Z",
+      "totals": {
+        "input_tokens": 14585290,
+        "output_tokens": 87410,
+        "total_tokens": 14672700,
+        "cached_tokens": 4172288,
+        "reasoning_tokens": 11154,
+        "request_count": 267,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T02:38:51.779Z",
+      "totals": {
+        "input_tokens": 14680994,
+        "output_tokens": 87511,
+        "total_tokens": 14768505,
+        "cached_tokens": 4172288,
+        "reasoning_tokens": 11194,
+        "request_count": 268,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T02:38:58.251Z",
+      "totals": {
+        "input_tokens": 14776773,
+        "output_tokens": 87631,
+        "total_tokens": 14864404,
+        "cached_tokens": 4196352,
+        "reasoning_tokens": 11194,
+        "request_count": 269,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T02:39:07.827Z",
+      "totals": {
+        "input_tokens": 14872833,
+        "output_tokens": 87911,
+        "total_tokens": 14960744,
+        "cached_tokens": 4196352,
+        "reasoning_tokens": 11194,
+        "request_count": 270,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T02:39:45.195Z",
+      "totals": {
+        "input_tokens": 14969186,
+        "output_tokens": 88074,
+        "total_tokens": 15057260,
+        "cached_tokens": 4289024,
+        "reasoning_tokens": 11204,
+        "request_count": 271,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T02:39:55.764Z",
+      "totals": {
+        "input_tokens": 15065851,
+        "output_tokens": 88449,
+        "total_tokens": 15154300,
+        "cached_tokens": 4289024,
+        "reasoning_tokens": 11204,
+        "request_count": 272,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T02:40:38.116Z",
+      "totals": {
+        "input_tokens": 15066129,
+        "output_tokens": 88463,
+        "total_tokens": 15154592,
+        "cached_tokens": 4289024,
+        "reasoning_tokens": 11204,
+        "request_count": 273,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T02:40:43.483Z",
+      "totals": {
+        "input_tokens": 15091863,
+        "output_tokens": 88710,
+        "total_tokens": 15180573,
+        "cached_tokens": 4313088,
+        "reasoning_tokens": 11354,
+        "request_count": 274,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T02:40:48.835Z",
+      "totals": {
+        "input_tokens": 15117715,
+        "output_tokens": 88877,
+        "total_tokens": 15206592,
+        "cached_tokens": 4337152,
+        "reasoning_tokens": 11354,
+        "request_count": 275,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T02:40:56.887Z",
+      "totals": {
+        "input_tokens": 15143789,
+        "output_tokens": 89228,
+        "total_tokens": 15233017,
+        "cached_tokens": 4361216,
+        "reasoning_tokens": 11407,
+        "request_count": 276,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T02:41:11.977Z",
+      "totals": {
+        "input_tokens": 15169998,
+        "output_tokens": 89426,
+        "total_tokens": 15259424,
+        "cached_tokens": 4361216,
+        "reasoning_tokens": 11447,
+        "request_count": 277,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T02:41:15.773Z",
+      "totals": {
+        "input_tokens": 15196251,
+        "output_tokens": 89529,
+        "total_tokens": 15285780,
+        "cached_tokens": 4385280,
+        "reasoning_tokens": 11457,
+        "request_count": 278,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T02:41:17.624Z",
+      "totals": {
+        "input_tokens": 15222756,
+        "output_tokens": 89553,
+        "total_tokens": 15312309,
+        "cached_tokens": 4385280,
+        "reasoning_tokens": 11457,
+        "request_count": 279,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T02:41:19.554Z",
+      "totals": {
+        "input_tokens": 15249301,
+        "output_tokens": 89596,
+        "total_tokens": 15338897,
+        "cached_tokens": 4409344,
+        "reasoning_tokens": 11457,
+        "request_count": 280,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T02:41:27.185Z",
+      "totals": {
+        "input_tokens": 15275956,
+        "output_tokens": 89918,
+        "total_tokens": 15365874,
+        "cached_tokens": 4433408,
+        "reasoning_tokens": 11513,
+        "request_count": 281,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T02:41:35.040Z",
+      "totals": {
+        "input_tokens": 15302930,
+        "output_tokens": 90138,
+        "total_tokens": 15393068,
+        "cached_tokens": 4459520,
+        "reasoning_tokens": 11638,
+        "request_count": 282,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T02:41:49.265Z",
+      "totals": {
+        "input_tokens": 15330158,
+        "output_tokens": 90243,
+        "total_tokens": 15420401,
+        "cached_tokens": 4478464,
+        "reasoning_tokens": 11674,
+        "request_count": 283,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T02:41:51.628Z",
+      "totals": {
+        "input_tokens": 15357584,
+        "output_tokens": 90266,
+        "total_tokens": 15447850,
+        "cached_tokens": 4504064,
+        "reasoning_tokens": 11674,
+        "request_count": 284,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T02:42:03.075Z",
+      "totals": {
+        "input_tokens": 15385049,
+        "output_tokens": 90786,
+        "total_tokens": 15475835,
+        "cached_tokens": 4530688,
+        "reasoning_tokens": 11674,
+        "request_count": 285,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T02:42:28.956Z",
+      "totals": {
+        "input_tokens": 15413043,
+        "output_tokens": 91166,
+        "total_tokens": 15504209,
+        "cached_tokens": 4556800,
+        "reasoning_tokens": 11866,
+        "request_count": 286,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T02:42:40.526Z",
+      "totals": {
+        "input_tokens": 15441269,
+        "output_tokens": 91703,
+        "total_tokens": 15532972,
+        "cached_tokens": 4583936,
+        "reasoning_tokens": 11925,
+        "request_count": 287,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T02:45:10.848Z",
+      "totals": {
+        "input_tokens": 15470725,
+        "output_tokens": 92143,
+        "total_tokens": 15562868,
+        "cached_tokens": 4583936,
+        "reasoning_tokens": 12196,
+        "request_count": 288,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T02:45:46.522Z",
+      "totals": {
+        "input_tokens": 15500355,
+        "output_tokens": 93767,
+        "total_tokens": 15594122,
+        "cached_tokens": 4611072,
+        "reasoning_tokens": 12712,
+        "request_count": 289,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T02:48:50.177Z",
+      "totals": {
+        "input_tokens": 15531161,
+        "output_tokens": 93813,
+        "total_tokens": 15624974,
+        "cached_tokens": 4611072,
+        "reasoning_tokens": 12712,
+        "request_count": 290,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T02:51:16.320Z",
+      "totals": {
+        "input_tokens": 15561931,
+        "output_tokens": 94960,
+        "total_tokens": 15656891,
+        "cached_tokens": 4611072,
+        "reasoning_tokens": 12854,
+        "request_count": 291,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T02:53:08.593Z",
+      "totals": {
+        "input_tokens": 15593713,
+        "output_tokens": 95401,
+        "total_tokens": 15689114,
+        "cached_tokens": 4611072,
+        "reasoning_tokens": 13119,
+        "request_count": 292,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T02:53:19.645Z",
+      "totals": {
+        "input_tokens": 15625920,
+        "output_tokens": 95825,
+        "total_tokens": 15721745,
+        "cached_tokens": 4642304,
+        "reasoning_tokens": 13119,
+        "request_count": 293,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T02:53:53.240Z",
+      "totals": {
+        "input_tokens": 15658561,
+        "output_tokens": 96135,
+        "total_tokens": 15754696,
+        "cached_tokens": 4642304,
+        "reasoning_tokens": 13119,
+        "request_count": 294,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T02:54:57.014Z",
+      "totals": {
+        "input_tokens": 15691533,
+        "output_tokens": 96508,
+        "total_tokens": 15788041,
+        "cached_tokens": 4642304,
+        "reasoning_tokens": 13405,
+        "request_count": 295,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T02:55:14.778Z",
+      "totals": {
+        "input_tokens": 15724749,
+        "output_tokens": 97348,
+        "total_tokens": 15822097,
+        "cached_tokens": 4642304,
+        "reasoning_tokens": 13405,
+        "request_count": 296,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T02:56:05.937Z",
+      "totals": {
+        "input_tokens": 15758858,
+        "output_tokens": 97417,
+        "total_tokens": 15856275,
+        "cached_tokens": 4674560,
+        "reasoning_tokens": 13405,
+        "request_count": 297,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T02:56:12.061Z",
+      "totals": {
+        "input_tokens": 15793121,
+        "output_tokens": 97633,
+        "total_tokens": 15890754,
+        "cached_tokens": 4674560,
+        "reasoning_tokens": 13405,
+        "request_count": 298,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T02:56:20.879Z",
+      "totals": {
+        "input_tokens": 15827851,
+        "output_tokens": 97981,
+        "total_tokens": 15925832,
+        "cached_tokens": 4674560,
+        "reasoning_tokens": 13405,
+        "request_count": 299,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T02:59:32.606Z",
+      "totals": {
+        "input_tokens": 15862945,
+        "output_tokens": 98319,
+        "total_tokens": 15961264,
+        "cached_tokens": 4674560,
+        "reasoning_tokens": 13405,
+        "request_count": 300,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T03:01:39.324Z",
+      "totals": {
+        "input_tokens": 15898430,
+        "output_tokens": 98729,
+        "total_tokens": 15997159,
+        "cached_tokens": 4674560,
+        "reasoning_tokens": 13453,
+        "request_count": 301,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
+    },
+    {
+      "timestamp": "2026-05-21T06:49:54.385Z",
+      "totals": {
+        "input_tokens": 15924165,
+        "output_tokens": 98742,
+        "total_tokens": 16022907,
+        "cached_tokens": 4674560,
+        "reasoning_tokens": 13453,
+        "request_count": 302,
+        "active_accounts": 1,
+        "total_accounts": 1
+      }
     }
   ],
   "baseline": {
